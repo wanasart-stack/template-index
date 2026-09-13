@@ -1,0 +1,3530 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ห้องสมุดนักอ่าน - สะสมแต้มจากการอ่าน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #EDF3E8;
+    --paper-deep: #DCE7D3;
+    --wood-dark: #1E3327;
+    --wood: #35513E;
+    --wood-light: #4E7059;
+    --wood-line: rgba(0,0,0,0.25);
+    --ink: #24301F;
+    --ink-soft: #58694E;
+    --cream: #F4ECD8;
+    --brass: #B4903F;
+    --brass-bright: #E0B563;
+    --unread: #96A08A;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--paper);
+    font-family:'Sarabun', sans-serif;
+    color:var(--ink);
+    overflow-x:hidden;
+  }
+
+  /* ---------- Login screen ---------- */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    background:
+      radial-gradient(ellipse at top, rgba(180,144,63,0.16), transparent 60%),
+      var(--paper);
+  }
+  .login-wrap{
+    width:100%;
+    max-width:380px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .brand-block{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    margin-bottom:22px;
+    text-align:center;
+  }
+  .brand-block .brand-logo{
+    width:112px;
+    height:112px;
+    border-radius:50%;
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,0.18);
+    padding:6px;
+  }
+  .brand-block .brand-logo img{ width:100%; height:100%; object-fit:contain; }
+  .brand-block .brand-name{
+    font-family:'Sarabun', sans-serif;
+    font-weight:600;
+    font-size:15.5px;
+    color:var(--ink);
+    line-height:1.5;
+    max-width:300px;
+  }
+  .login-footer{
+    margin-top:22px;
+    text-align:center;
+    font-size:12px;
+    line-height:1.8;
+    color:var(--ink-soft);
+  }
+  .login-footer .org-line{
+    font-weight:600;
+    color:var(--ink);
+    font-size:12.5px;
+    margin-bottom:2px;
+  }
+  .login-card{
+    width:100%;
+    max-width:380px;
+    background:rgba(255,255,255,0.4);
+    border:1px solid rgba(42,29,18,0.18);
+    border-radius:6px;
+    padding:40px 32px 34px;
+    text-align:center;
+    box-shadow:0 20px 50px rgba(0,0,0,0.15);
+  }
+  .login-card .eyebrow-line{ width:44px; height:2px; background:var(--brass); margin:0 auto 16px; }
+  .login-card h1{
+    font-family:'Sarabun', sans-serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0 0 8px;
+  }
+  .login-card p.sub{
+    font-size:13.5px;
+    color:var(--ink-soft);
+    margin:0 0 28px;
+    line-height:1.6;
+  }
+  .field{ text-align:left; margin-bottom:16px; }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    padding:11px 13px;
+    border:1px solid rgba(42,29,18,0.3);
+    border-radius:4px;
+    background:rgba(255,255,255,0.6);
+    font-family:'Sarabun', sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+  }
+  .field input:focus{
+    outline:none;
+    border-color:var(--brass);
+    background:#fff;
+  }
+  .login-error{
+    font-size:12.5px;
+    color:#A3372A;
+    margin:-6px 0 14px;
+    text-align:left;
+    display:none;
+  }
+  .btn{
+    display:inline-block;
+    width:100%;
+    padding:13px 20px;
+    background:var(--ink);
+    color:var(--cream);
+    border:none;
+    border-radius:4px;
+    font-family:'Sarabun', sans-serif;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background 0.15s ease, transform 0.1s ease;
+  }
+  .btn:hover{ background:var(--wood-light); }
+  .btn:active{ transform:scale(0.98); }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn.secondary{
+    background:transparent;
+    color:var(--ink);
+    border:1px solid rgba(42,29,18,0.3);
+    margin-top:10px;
+  }
+  .btn.secondary:hover{ background:rgba(42,29,18,0.06); }
+
+  #appContent{ display:none; }
+
+  /* ---------- Header (library entrance) ---------- */
+  header{
+    position:relative;
+    padding:44px 24px 34px;
+    text-align:center;
+    background:var(--wood-dark);
+    color:var(--cream);
+    overflow:hidden;
+  }
+  .shelf-deco{
+    display:flex;
+    justify-content:center;
+    gap:5px;
+    margin-bottom:26px;
+    opacity:0.9;
+  }
+  .shelf-deco .spine{
+    width:15px;
+    border-radius:2px 2px 0 0;
+  }
+  header .eyebrow-line{
+    width:52px;
+    height:2px;
+    background:var(--brass);
+    margin:0 auto 14px;
+  }
+  header h1{
+    font-family:'Sarabun', sans-serif;
+    font-weight:600;
+    font-size:clamp(26px, 5vw, 38px);
+    margin:0 0 10px;
+    letter-spacing:0.5px;
+  }
+  header p.sub{
+    font-size:14.5px;
+    color:rgba(244,236,216,0.75);
+    margin:0 0 22px;
+    max-width:440px;
+    margin-left:auto;
+    margin-right:auto;
+    line-height:1.7;
+  }
+  .greeting{
+    font-size:13px;
+    color:rgba(244,236,216,0.65);
+    margin-bottom:16px;
+  }
+  .greeting .logout-link{
+    color:var(--brass-bright);
+    text-decoration:underline;
+    cursor:pointer;
+    margin-left:8px;
+  }
+  .points-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 22px;
+    border-radius:999px;
+    border:1px solid var(--brass);
+    background:rgba(180,144,63,0.12);
+    color:var(--brass-bright);
+    font-size:14.5px;
+    font-weight:600;
+  }
+  .points-pill .book-count{
+    color:rgba(244,236,216,0.55);
+    font-weight:500;
+    font-size:13px;
+    border-left:1px solid rgba(224,181,99,0.35);
+    padding-left:10px;
+    margin-left:2px;
+  }
+
+  .header-nav{
+    margin-top:16px;
+  }
+  .nav-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:10px 20px;
+    border-radius:999px;
+    border:1px solid rgba(224,181,99,0.5);
+    background:rgba(255,255,255,0.06);
+    color:var(--cream);
+    font-family:'Sarabun', sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background 0.15s ease, transform 0.1s ease;
+  }
+  .nav-btn:hover{ background:rgba(255,255,255,0.14); }
+  .nav-btn:active{ transform:scale(0.97); }
+
+  .points-toast{
+    position:fixed;
+    top:20px;
+    left:50%;
+    transform:translateX(-50%) translateY(-20px);
+    background:var(--ink);
+    color:var(--brass-bright);
+    padding:10px 22px;
+    border-radius:999px;
+    font-size:14px;
+    font-weight:600;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.25s ease, transform 0.25s ease;
+    z-index:80;
+  }
+  .points-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ---------- Library body ---------- */
+  .library{
+    max-width:920px;
+    margin:0 auto;
+    padding:40px 24px 70px;
+  }
+
+  /* ---------- Rewards redemption ---------- */
+  .rewards-section{
+    max-width:920px;
+    margin:0 auto;
+    padding:34px 24px 0;
+  }
+  .rewards-header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .rewards-header h2{
+    font-family:'Sarabun', sans-serif;
+    font-weight:700;
+    font-size:21px;
+    margin:0;
+    color:var(--ink);
+  }
+  .rewards-header .rewards-sub{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  .rewards-header-right{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .history-link{
+    background:none;
+    border:none;
+    padding:0;
+    font-family:'Sarabun', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--brass);
+    text-decoration:underline;
+    cursor:pointer;
+  }
+  .history-link:hover{ color:var(--brass-bright); }
+  .rewards-row{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+    gap:12px;
+  }
+  .reward-card{
+    background:rgba(255,255,255,0.5);
+    border:1px solid rgba(36,48,31,0.16);
+    border-radius:10px;
+    padding:12px;
+    text-align:left;
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    gap:12px;
+  }
+  .reward-card .reward-photo-wrap{
+    width:64px;
+    height:64px;
+    flex-shrink:0;
+    border-radius:8px;
+    overflow:hidden;
+    background:rgba(36,48,31,0.06);
+    box-shadow:0 3px 8px rgba(0,0,0,0.12);
+  }
+  .reward-card .reward-photo{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .reward-card .reward-icon{
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 4px 10px rgba(0,0,0,0.18);
+  }
+  .reward-card .reward-icon svg{ width:26px; height:26px; }
+  .reward-card .reward-info{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width:0;
+  }
+  .reward-card .reward-title{
+    font-family:'Sarabun', sans-serif;
+    font-weight:700;
+    font-size:13.5px;
+    color:var(--ink);
+    line-height:1.3;
+  }
+  .reward-card .reward-cost{
+    font-size:12px;
+    font-weight:600;
+    color:var(--brass);
+  }
+  .reward-card .btn{
+    padding:9px 18px;
+    font-size:13.5px;
+    width:auto;
+  }
+  .reward-card .btn:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+  }
+  .reward-card .reward-lack{
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- Rewards: single scan-to-redeem CTA ---------- */
+  .rewards-scan-cta{
+    margin-top:26px;
+    padding:24px 20px;
+    border-radius:10px;
+    background:rgba(180,144,63,0.10);
+    border:1px dashed rgba(180,144,63,0.55);
+    text-align:center;
+  }
+  .rewards-scan-cta .btn{
+    width:auto;
+    padding:15px 32px;
+    font-size:15.5px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+  .rewards-scan-hint{
+    margin:12px 0 0;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    line-height:1.7;
+    max-width:440px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+
+  /* ---------- QR scan modal (reader) ---------- */
+  .qr-scan-frame{
+    position:relative;
+    width:100%;
+    max-width:300px;
+    aspect-ratio:1/1;
+    margin:0 auto 16px;
+    border-radius:14px;
+    overflow:hidden;
+    background:#111;
+  }
+  .qr-scan-frame video{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .qr-scan-reticle{
+    position:absolute;
+    inset:13%;
+    border:3px solid var(--brass-bright);
+    border-radius:16px;
+    pointer-events:none;
+    box-shadow:0 0 0 999px rgba(0,0,0,0.32);
+  }
+  .qr-scan-status{
+    text-align:center;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    margin:0 0 18px;
+    min-height:18px;
+  }
+
+  .site-footer{
+    max-width:920px;
+    margin:0 auto;
+    padding:26px 24px 40px;
+    text-align:center;
+    border-top:1px solid rgba(36,48,31,0.14);
+    font-size:12px;
+    line-height:1.9;
+    color:var(--ink-soft);
+  }
+  .site-footer .org-line{
+    font-family:'Sarabun', sans-serif;
+    font-weight:600;
+    color:var(--ink);
+    font-size:13.5px;
+    margin-bottom:3px;
+  }
+
+  .shelf-section{ margin-bottom:46px; }
+  .shelf-header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .shelf-header-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .shelf-icon-badge{
+    width:44px;
+    height:44px;
+    border-radius:13px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+    box-shadow:0 4px 10px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .shelf-icon{
+    width:24px; height:24px;
+    flex-shrink:0;
+  }
+  .shelf-header h2{
+    font-family:'Sarabun', sans-serif;
+    font-weight:600;
+    font-size:21px;
+    margin:0;
+    color:var(--ink);
+  }
+  .shelf-count{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    font-weight:600;
+    white-space:nowrap;
+  }
+
+  .shelf-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    gap:16px;
+    padding:6px 8px 0;
+  }
+
+  /* ---------- Book card ---------- */
+  .book{
+    position:relative;
+    width:118px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    cursor:pointer;
+    user-select:none;
+    transition:transform 0.18s ease;
+  }
+  .book:hover{ transform:translateY(-5px); }
+  .book.done{ transform:translateY(-8px); }
+  .book.done:hover{ transform:translateY(-11px); }
+
+  .book-cover{
+    position:relative;
+    width:118px;
+    height:158px;
+    border-radius:3px 9px 9px 3px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:14px 12px;
+    box-shadow:0 6px 0 rgba(0,0,0,0.22), 0 10px 16px rgba(0,0,0,0.2);
+    border-left:6px solid rgba(255,255,255,0.28);
+  }
+  .book-cover::after{
+    content:"";
+    position:absolute;
+    top:4px; bottom:4px; right:6px;
+    width:5px;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(244,236,216,0.55) 0px,
+      rgba(244,236,216,0.55) 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    border-radius:2px;
+  }
+  .book-cover-title{
+    font-family:'Sarabun', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    line-height:1.3;
+    color:var(--cream);
+    text-align:center;
+    text-shadow:0 1px 2px rgba(0,0,0,0.25);
+    width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .book.unread .book-cover{ filter:saturate(0.55) brightness(0.92); }
+
+  .done-badge{
+    position:absolute;
+    top:-8px;
+    right:-8px;
+    width:26px;
+    height:26px;
+    border-radius:50%;
+    background:var(--brass-bright);
+    border:2px solid var(--wood-dark);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .done-badge svg{ width:14px; height:14px; }
+
+  .book-title{
+    margin-top:10px;
+    font-family:'Sarabun', sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    text-align:center;
+    color:var(--ink);
+    line-height:1.3;
+    width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .book-status{
+    margin-top:2px;
+    font-size:11px;
+    color:var(--ink-soft);
+    font-weight:500;
+  }
+  .book.done .book-status{ color:#2F5D4E; }
+
+  .shelf-plank{
+    height:16px;
+    margin-top:12px;
+    background:linear-gradient(to bottom, var(--wood-light), var(--wood));
+    border-radius:2px;
+    box-shadow:0 4px 8px rgba(0,0,0,0.25), inset 0 2px 0 rgba(255,255,255,0.08);
+  }
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(20,14,9,0.6);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .overlay.show{ display:flex; }
+
+  .modal{
+    background:var(--paper);
+    border:1px solid rgba(42,29,18,0.2);
+    border-radius:6px;
+    max-width:380px;
+    width:100%;
+    padding:32px 28px 28px;
+    text-align:center;
+    box-shadow:0 20px 50px rgba(0,0,0,0.35);
+    position:relative;
+  }
+  .modal.wide{
+    max-width:600px;
+    max-height:86vh;
+    overflow-y:auto;
+    text-align:left;
+  }
+  .modal .zone-tag{
+    display:inline-block;
+    font-size:12px;
+    letter-spacing:0.5px;
+    color:var(--brass);
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  .modal h2{
+    font-family:'Sarabun', sans-serif;
+    font-size:24px;
+    margin:0 0 12px;
+    color:var(--ink);
+  }
+  .modal p{
+    font-size:14.5px;
+    color:var(--ink-soft);
+    line-height:1.7;
+    margin:0 0 24px;
+  }
+  .attempt-note{
+    font-size:13px;
+    font-weight:600;
+    color:var(--brass);
+    margin:-6px 0 18px;
+    text-align:center;
+  }
+  .attempt-note.warn{ color:#A3372A; }
+
+  .passage-box{
+    background:rgba(255,255,255,0.45);
+    border:1px solid rgba(42,29,18,0.15);
+    border-left:3px solid var(--brass);
+    border-radius:4px;
+    padding:18px 20px;
+    margin-bottom:22px;
+    font-size:14.5px;
+    line-height:1.9;
+    color:var(--ink);
+    text-align:left;
+    max-height:230px;
+    overflow-y:auto;
+  }
+
+  .quiz-progress{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+    text-align:left;
+    font-weight:600;
+  }
+
+  .question-block{
+    margin-bottom:20px;
+    padding-bottom:18px;
+    border-bottom:1px solid rgba(42,29,18,0.12);
+  }
+  .question-block:last-of-type{ border-bottom:none; }
+  .question-block .q-text{
+    font-size:14.5px;
+    font-weight:600;
+    color:var(--ink);
+    margin-bottom:10px;
+    line-height:1.6;
+  }
+  .question-block .q-num{ color:var(--brass); margin-right:4px; }
+
+  .option-row{
+    display:flex;
+    align-items:flex-start;
+    gap:9px;
+    padding:8px 10px;
+    border-radius:4px;
+    cursor:pointer;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--ink-soft);
+    transition:background 0.12s ease;
+  }
+  .option-row:hover{ background:rgba(180,144,63,0.08); }
+  .option-row input{ margin-top:4px; accent-color:var(--ink); }
+  .option-row.selected{
+    background:rgba(180,144,63,0.16);
+    color:var(--ink);
+    font-weight:500;
+  }
+
+  .result-stats{
+    display:flex;
+    justify-content:center;
+    gap:26px;
+    margin-bottom:22px;
+  }
+  .result-stats > div{ text-align:center; }
+  .result-stats .num{
+    display:block;
+    font-family:'Sarabun', sans-serif;
+    font-size:22px;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .result-stats .lbl{
+    display:block;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .result-note{
+    font-size:13.5px;
+    color:var(--ink-soft);
+    margin:-14px 0 22px;
+    text-align:center;
+  }
+  .review-list{
+    text-align:left;
+    margin:0 0 24px;
+    padding:0;
+    list-style:none;
+  }
+  .review-list li{
+    font-size:13px;
+    line-height:1.7;
+    padding:8px 10px;
+    border-radius:4px;
+    margin-bottom:6px;
+  }
+  .review-list li.right{ background:rgba(47,93,78,0.12); color:#2F5D4E; }
+  .review-list li.wrong{ background:rgba(163,55,42,0.1); color:#A3372A; }
+
+  .history-list{
+    text-align:left;
+    margin:0 0 22px;
+    padding:0;
+    list-style:none;
+    max-height:320px;
+    overflow-y:auto;
+  }
+  .history-list li{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    font-size:13px;
+    line-height:1.6;
+    padding:10px 12px;
+    border-radius:4px;
+    margin-bottom:6px;
+    background:rgba(255,255,255,0.45);
+    border:1px solid rgba(36,48,31,0.12);
+  }
+  .history-list .h-left{ display:flex; flex-direction:column; gap:2px; }
+  .history-list .h-title{ font-weight:600; color:var(--ink); }
+  .history-list .h-date{ font-size:11px; color:var(--ink-soft); }
+  .history-list .h-cost{ font-weight:700; color:#A3372A; white-space:nowrap; }
+  .history-empty{
+    font-size:13.5px;
+    color:var(--ink-soft);
+    text-align:center;
+    padding:20px 0;
+  }
+  .history-loading{
+    font-size:13.5px;
+    color:var(--ink-soft);
+    text-align:center;
+    padding:20px 0;
+  }
+
+  @media (max-width:480px){
+    .shelf-row{ gap:12px; }
+    .book, .book-cover{ width:100px; }
+    .book-cover{ height:140px; }
+  }
+
+  /* ---------- Multi-chapter books ---------- */
+  .chapter-badge{
+    position:absolute;
+    top:-8px;
+    right:-8px;
+    padding:3px 8px;
+    border-radius:10px;
+    background:var(--wood-dark);
+    color:var(--cream);
+    font-size:10.5px;
+    font-weight:700;
+    white-space:nowrap;
+    box-shadow:0 2px 4px rgba(0,0,0,0.25);
+  }
+  .chapter-list-progress{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--brass);
+    margin:-8px 0 18px;
+    text-align:left;
+  }
+  .chapter-list{
+    text-align:left;
+    margin:0 0 20px;
+    padding:0;
+    list-style:none;
+    max-height:400px;
+    overflow-y:auto;
+  }
+  .chapter-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 14px;
+    border-radius:5px;
+    margin-bottom:8px;
+    background:rgba(255,255,255,0.45);
+    border:1px solid rgba(36,48,31,0.12);
+  }
+  .chapter-row-left{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .chapter-row-num{ font-size:11px; color:var(--brass); font-weight:700; }
+  .chapter-row-title{
+    font-size:14px;
+    font-weight:600;
+    color:var(--ink);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .chapter-status{ font-size:11.5px; color:var(--ink-soft); }
+  .chapter-status.done{ color:#2F5D4E; font-weight:600; }
+  .chapter-status.exhausted{ color:#A3372A; font-weight:600; }
+  .chapter-open-btn{
+    width:auto !important;
+    flex-shrink:0;
+    padding:9px 16px !important;
+    font-size:12.5px !important;
+  }
+
+  /* ---------- Admin dashboard ---------- */
+  #adminContent{ display:none; }
+  .admin-summary{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-bottom:28px;
+  }
+  .admin-stat{
+    flex:1 1 150px;
+    background:rgba(255,255,255,0.5);
+    border:1px solid rgba(42,29,18,0.15);
+    border-radius:6px;
+    padding:16px 18px;
+    text-align:center;
+  }
+  .admin-stat .num{
+    display:block;
+    font-size:24px;
+    font-weight:700;
+    color:var(--wood-dark);
+  }
+  .admin-stat .lbl{
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .admin-toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:26px;
+  }
+  .admin-toolbar .btn{ width:auto; }
+  .admin-table-wrap{ margin-bottom:36px; overflow-x:auto; }
+  .admin-table-wrap h3{
+    font-size:16px;
+    margin:0 0 10px;
+    color:var(--wood-dark);
+  }
+  .admin-table{
+    width:100%;
+    min-width:480px;
+    border-collapse:collapse;
+    background:rgba(255,255,255,0.5);
+    border-radius:6px;
+    overflow:hidden;
+    font-size:13.5px;
+  }
+  .admin-table th, .admin-table td{
+    padding:10px 12px;
+    text-align:left;
+    border-bottom:1px solid rgba(42,29,18,0.12);
+    white-space:nowrap;
+  }
+  .admin-table th{
+    background:var(--wood-dark);
+    color:var(--cream);
+    font-weight:600;
+    font-size:12px;
+  }
+  .admin-table tr:last-child td{ border-bottom:none; }
+  .admin-empty{
+    padding:16px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    white-space:normal;
+  }
+
+  /* ---------- Admin: QR code generator notice
+     (ตัว UI จริงสำหรับกดแต้ม/สร้าง QR ย้ายไปอยู่ที่ admin.html แล้ว
+     เหลือไว้แค่กล่องข้อความแจ้งเตือนในหน้านี้) ---------- */
+  .admin-qr-wrap{
+    background:rgba(255,255,255,0.5);
+    border:1px solid rgba(42,29,18,0.15);
+    border-radius:8px;
+    padding:22px 20px;
+    margin-bottom:30px;
+  }
+  .admin-qr-wrap h3{
+    font-size:16px;
+    margin:0 0 6px;
+    color:var(--wood-dark);
+  }
+  .admin-qr-desc{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:0;
+    line-height:1.7;
+  }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="brand-block">
+      <div class="brand-logo">
+        <img src="logo.png?v=2" alt="ตราศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอเทิง">
+      </div>
+      <div class="brand-name">ศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอเทิง</div>
+    </div>
+    <div class="login-card">
+      <div class="eyebrow-line"></div>
+      <h1>ห้องสมุดนักอ่าน</h1>
+      <p class="sub">เข้าสู่ระบบเพื่ออ่านเรื่องราวหลากหลายหมวดหมู่ ทำแบบทดสอบท้ายเรื่อง เพื่อสะสมแต้ม</p>
+      <form id="loginForm">
+        <div class="field">
+          <label for="loginName">ชื่อนักอ่าน</label>
+          <input type="text" id="loginName" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="loginPass">รหัสผ่าน</label>
+          <input type="password" id="loginPass" autocomplete="current-password" required>
+        </div>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin:-8px 0 16px; line-height:1.6;">
+        หากเป็นการเข้าใช้ครั้งแรก ระบบจะสร้างบัญชีให้อัตโนมัติด้วยรหัสผ่านนี้ ครั้งต่อไปต้องใช้รหัสผ่านเดิม
+      </p>
+        <div class="login-error" id="loginError"></div>
+        <button class="btn" type="submit">เข้าสู่ระบบ</button>
+      </form>
+    </div>
+    <div class="login-footer">
+      <div>สร้างสรรค์โดย นายวนศาสตร์ วัฒนาสกุลลี ครู สกร.ระดับอำเภอเทิง</div>
+    </div>
+  </div>
+</div>
+
+<div id="appContent">
+  <header>
+    <div class="shelf-deco" id="shelfDeco"></div>
+    <div class="eyebrow-line"></div>
+    <h1>ห้องสมุดนักอ่าน</h1>
+    <p class="sub" id="headerSub">เลือกอ่านเรื่องไหนก่อนก็ได้ ทุกหมวดหมู่เปิดให้อ่านพร้อมกัน ทำแบบทดสอบท้ายเรื่องให้ถูกครบเพื่อรับแต้ม</p>
+    <div class="greeting" id="greetingText"></div>
+    <div class="points-pill">
+      <span id="pointsText">0</span> แต้ม
+      <span class="book-count" id="bookCountText">อ่านแล้ว 0/0 เล่ม</span>
+    </div>
+    <div class="header-nav">
+      <button class="nav-btn" id="navToRewardsBtn" type="button">🎁 แลกแต้มเป็นรางวัล</button>
+      <button class="nav-btn" id="navToLibraryBtn" type="button" style="display:none;">📚 กลับไปหน้าอ่านหนังสือ</button>
+    </div>
+  </header>
+
+  <div class="page" id="pageLibrary">
+    <div class="library" id="libraryRoot"></div>
+  </div>
+
+  <div class="page" id="pageRewards" style="display:none;">
+    <div class="rewards-section" id="rewardsSection"></div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="org-line">ศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอเทิง</div>
+    <div>สร้างสรรค์โดย นายวนศาสตร์ วัฒนาสกุลลี ครู สกร.ระดับอำเภอเทิง</div>
+  </footer>
+</div>
+
+<div id="adminContent">
+  <header>
+    <div class="eyebrow-line"></div>
+    <h1>แผงควบคุมผู้ดูแลระบบ</h1>
+    <p class="sub">ภาพรวมผู้ใช้ทั้งหมด แต้มสะสม และประวัติการแลกรางวัล</p>
+    <div class="greeting" id="adminGreetingText"></div>
+  </header>
+
+  <div class="page" id="pageAdmin">
+    <div class="admin-summary" id="adminSummary"></div>
+
+    <div class="admin-qr-wrap">
+      <h3>🎁 ออก QR Code สำหรับแลกรางวัล</h3>
+      <p class="admin-qr-desc">ฟีเจอร์ออก QR Code ถูกย้ายไปอยู่ในไฟล์แยกต่างหากชื่อ <strong>admin.html</strong> แล้ว (เข้าใช้งานได้เร็วกว่า ไม่ต้องโหลดหน้าห้องสมุดทั้งหมด) กรุณาเปิดไฟล์นั้นแล้วล็อกอินด้วยบัญชีแอดมินเดียวกันนี้</p>
+    </div>
+
+    <div class="admin-toolbar">
+      <button class="btn" id="adminExportBtn" type="button" style="width:auto;">📊 ส่งออกเป็น Excel</button>
+      <button class="btn secondary" id="adminRefreshBtn" type="button" style="width:auto;">🔄 รีเฟรชข้อมูล</button>
+    </div>
+    <div class="admin-table-wrap">
+      <h3>รายชื่อผู้ใช้ทั้งหมด</h3>
+      <table class="admin-table" id="adminUsersTable">
+        <tr><td class="admin-empty">กำลังโหลดข้อมูล...</td></tr>
+      </table>
+    </div>
+    <div class="admin-table-wrap">
+      <h3>ประวัติการแลกรางวัลทั้งหมด</h3>
+      <table class="admin-table" id="adminRedemptionsTable"></table>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="org-line">ศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอเทิง</div>
+  </footer>
+</div>
+
+<div class="points-toast" id="pointsToast"></div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalReady">
+    <div class="zone-tag" id="readyZoneTag">หมวดหมู่</div>
+    <h2 id="readyTitle">ชื่อเรื่อง</h2>
+    <p id="readyDesc">ท่านพร้อมที่จะตอบคำถามเราหรือไม่ ? เมื่อเริ่มแล้วจะมีคำถามทั้งหมด 5 ข้อ</p>
+    <p class="attempt-note" id="attemptNote"></p>
+    <button class="btn" id="startBtn">พร้อม !</button>
+    <button class="btn secondary" id="closeReady">ปิด</button>
+  </div>
+
+  <div class="modal wide" id="modalQuiz" style="display:none;">
+    <div class="zone-tag" id="quizZoneTag">หมวดหมู่</div>
+    <h2 id="quizTitle" style="margin-bottom:6px;">ชื่อเรื่อง</h2>
+    <div class="attempt-note" id="quizAttemptNote" style="margin-bottom:14px;"></div>
+    <div class="passage-box" id="passageBox"></div>
+    <div class="quiz-progress" id="quizProgress">ตอบแล้ว 0/5 ข้อ</div>
+    <div id="questionsWrap"></div>
+    <button class="btn" id="submitBtn" disabled>ส่งคำตอบ</button>
+    <button class="btn secondary" id="closeQuiz">ปิด</button>
+  </div>
+
+  <div class="modal" id="modalResult" style="display:none;">
+    <div class="zone-tag" id="resultZoneTag">สรุปผล</div>
+    <h2 id="resultTitle">ผ่านด่านสำเร็จ</h2>
+    <div class="result-stats">
+      <div><span class="num" id="resultScore">5/5</span><span class="lbl">ตอบถูก</span></div>
+      <div><span class="num" id="resultLevel">สูง</span><span class="lbl">ระดับ</span></div>
+      <div><span class="num" id="resultTime">01:24</span><span class="lbl">เวลา</span></div>
+    </div>
+    <ul class="review-list" id="reviewList"></ul>
+    <p class="result-note" id="resultNote" style="display:none;"></p>
+    <button class="btn" id="continueBtn">ไปต่อ</button>
+    <button class="btn secondary" id="retryBtn" style="display:none;">ลองใหม่</button>
+  </div>
+
+  <div class="modal" id="modalRewardConfirm" style="display:none;">
+    <div class="zone-tag">แลกรางวัล</div>
+    <h2 id="rewardConfirmTitle">กระเป๋าผ้า</h2>
+    <p id="rewardConfirmDesc">ยืนยันแลกรางวัลนี้ด้วย 50 แต้มหรือไม่ ?</p>
+    <button class="btn" id="rewardConfirmBtn">ยืนยันแลกรางวัล</button>
+    <button class="btn secondary" id="rewardCancelBtn">ยกเลิก</button>
+  </div>
+
+  <div class="modal" id="modalRewardDone" style="display:none;">
+    <div class="zone-tag">แลกรางวัลสำเร็จ</div>
+    <h2 id="rewardDoneTitle">ยินดีด้วย !</h2>
+    <p id="rewardDoneDesc">คุณแลกกระเป๋าผ้าเรียบร้อยแล้ว</p>
+    <button class="btn" id="rewardDoneBtn">ปิด</button>
+  </div>
+
+  <div class="modal wide" id="modalQrScan" style="display:none;">
+    <div class="zone-tag">แลกรางวัลด้วย QR Code</div>
+    <h2 style="margin-bottom:14px;">สแกน QR Code จากเจ้าหน้าที่</h2>
+    <div class="qr-scan-frame">
+      <video id="qrScanVideo" playsinline muted autoplay></video>
+      <div class="qr-scan-reticle"></div>
+    </div>
+    <canvas id="qrScanCanvas" style="display:none;"></canvas>
+    <p class="qr-scan-status" id="qrScanStatus">กำลังเปิดกล้อง...</p>
+    <button class="btn secondary" id="qrScanCloseBtn">ปิด</button>
+  </div>
+
+  <div class="modal wide" id="modalChapters" style="display:none;">
+    <div class="zone-tag" id="chapterListZoneTag">หมวดหมู่</div>
+    <h2 id="chapterListTitle" style="margin-bottom:6px;">ชื่อเรื่อง</h2>
+    <div class="chapter-list-progress" id="chapterListProgress"></div>
+    <div class="chapter-list" id="chapterListWrap"></div>
+    <button class="btn secondary" id="closeChapters">ปิด</button>
+  </div>
+
+  <div class="modal wide" id="modalHistory" style="display:none;">
+    <div class="zone-tag">ประวัติการแลกแต้ม</div>
+    <h2 style="margin-bottom:16px;">ประวัติการแลกแต้มของฉัน</h2>
+    <div id="historyContent">
+      <div class="history-loading">กำลังโหลดข้อมูล...</div>
+    </div>
+    <button class="btn secondary" id="historyCloseBtn">ปิด</button>
+  </div>
+</div>
+
+<!-- Firebase (compat build - works with plain <script>, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<!-- SheetJS - ใช้สร้างไฟล์ .xlsx สำหรับปุ่ม "ส่งออกเป็น Excel" ในหน้า admin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- jsQR - อ่าน/ถอดรหัส QR Code จากภาพกล้อง (ฝั่งนักอ่านตอนสแกน)
+     (การ "สร้าง" ภาพ QR Code ย้ายไปอยู่ในไฟล์ admin.html แยกต่างหากแล้ว) -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+<script>
+/* ===================================================================
+   CONFIG - Firebase backend
+   Replaced the old Google Apps Script / Sheet API with Firebase
+   (Authentication + Firestore). Paste your own project's config below -
+   you get this block from: Firebase Console -> Project settings ->
+   General -> "Your apps" -> Web app -> SDK setup and configuration.
+
+   Data model in Firestore:
+   - users/{uid}
+       name: string
+       totalPoints: number
+       progress: { [bookKey]: true }        // true = quiz passed
+       createdAt: server timestamp
+     users/{uid}/redemptions/{autoId}
+       rewardTitle, cost, timestamp (server timestamp), totalPointsAfter
+
+   - content/{bookKey}   (OPTIONAL - only needed if you still want to be
+     able to edit a book's title/passage/questions without touching code)
+       title, passage, questions: [{ q, options, correct }]
+
+   Auth strategy: the original login screen only asks for "ชื่อนักอ่าน"
+   (name) + "รหัสผ่าน" (password), with auto-registration on first login.
+   Firebase Authentication needs an email, so we derive a fake, stable
+   email from the name (name -> "<slug>@readapp.local") and use Firebase
+   Email/Password auth underneath. This keeps the exact same login UX
+   the readers already know, while getting real auth (hashed passwords,
+   rate limiting, etc.) for free instead of storing plaintext passwords.
+=================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyBdjI88hqM3JLQgF09iNGOAN7WzCFU6jxw",
+  authDomain: "platform-81335.firebaseapp.com",
+  projectId: "platform-81335",
+  storageBucket: "platform-81335.firebasestorage.app",
+  messagingSenderId: "64102912838",
+  appId: "1:64102912838:web:19339c6ff950264a904b47"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* Two names can collide once "cleaned up" into an email-safe slug (e.g.
+   spaces/Thai punctuation stripped). We append a short hash of the raw
+   name so different display names practically never collide, while the
+   same name always maps back to the same email. */
+function nameToEmail(name){
+  const clean = name.trim().toLowerCase().replace(/[^a-z0-9ก-๙]+/g, "");
+  let hash = 0;
+  for(let i=0;i<name.length;i++){ hash = (hash*31 + name.charCodeAt(i)) >>> 0; }
+  return `${encodeURIComponent(clean || "reader")}-${hash.toString(36)}@readapp.local`;
+}
+
+let currentUserDocRef = null;
+
+async function loadRemoteContent(){
+  try{
+    const snap = await db.collection('content').get();
+    snap.forEach(doc=>{
+      const rz = doc.data();
+      const b = books.find(bb=> bb.key === doc.id);
+      if(!b) return;
+      if(rz.title) b.title = rz.title;
+      if(rz.passage) b.passage = rz.passage;
+      if(Array.isArray(rz.questions) && rz.questions.length === b.questions.length){
+        b.questions = rz.questions.map(q=> ({ q: q.q, options: q.options, correct: q.correct }));
+      }
+    });
+    render();
+  }catch(err){
+    console.warn("loadRemoteContent error:", err);
+  }
+}
+
+/* ===================================================================
+   CATEGORIES
+=================================================================== */
+const categories = [
+  {
+    key:"history", title:"ประวัติศาสตร์ชาติไทย", badge:"#B46B2C",
+    icon:`<path d="M12 2.3l2.1 2.9h-4.2z" fill="#fff"/><rect x="11.1" y="5.2" width="1.8" height="2.6" fill="#fff"/><path d="M7.4 9.4c0-2.3 2.1-4.1 4.6-4.1s4.6 1.8 4.6 4.1v1.4H7.4z" fill="#fff"/><path d="M5.6 12.8h12.8l1.2 3.4H4.4z" fill="#fff"/><path d="M4 17.9c0-1.2 1-2.1 2.3-2.1h11.4c1.3 0 2.3.9 2.3 2.1v2.8H4z" fill="#fff"/><rect x="2.3" y="21.1" width="19.4" height="1.9" rx="0.5" fill="#fff"/>`
+  },
+  {
+    key:"novel", title:"นวนิยาย", badge:"#7A3B66",
+    icon:`<path d="M12 6.1c-1.9-1.6-4.7-2.1-7.2-1.3-.5.16-.8.6-.8 1.1v13.3c0 .7.66 1.2 1.35.98 2.35-.74 4.98-.34 6.65 1.02 1.67-1.36 4.3-1.76 6.65-1.02.7.22 1.35-.27 1.35-.98V5.9c0-.5-.3-.94-.8-1.1-2.5-.8-5.3-.3-7.2 1.3z" fill="#fff"/><path d="M12 6.1v13.9" stroke="#5A2A4C" stroke-width="0.9" stroke-linecap="round"/><circle cx="17.6" cy="7.4" r="1.7" fill="#E0B563"/>`
+  },
+  {
+    key:"inspire", title:"หนังสือสร้างแรงบันดาลใจ", badge:"#1F6E5C",
+    icon:`<path d="M12 3.2a5.8 5.8 0 00-3.4 10.5c.75.55 1.2 1.4 1.2 2.3v.4h4.4v-.4c0-.9.45-1.75 1.2-2.3A5.8 5.8 0 0012 3.2z" fill="#fff"/><rect x="9.6" y="17.6" width="4.8" height="1.5" rx="0.75" fill="#fff"/><rect x="10.1" y="19.7" width="3.8" height="1.3" rx="0.65" fill="#fff"/><path d="M12 6.6a3.1 3.1 0 00-1.9 5.5" stroke="#1F6E5C" stroke-width="0.9" stroke-linecap="round" fill="none"/>`
+  },
+  {
+    key:"agri", title:"ความรู้การเกษตร", badge:"#4E7A34",
+    icon:`<path d="M12 21v-7.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M12 13.5c0-3.3-2.4-5.8-5.7-5.8 0 3.3 2.4 5.8 5.7 5.8z" fill="#fff"/><path d="M12 13.5c0-3.8 2.9-6.7 6.7-6.7 0 3.8-2.9 6.7-6.7 6.7z" fill="#fff"/><ellipse cx="12" cy="20.8" rx="4.6" ry="1.1" fill="#fff" opacity="0.4"/>`
+  },
+  {
+    key:"science", title:"วิทยาศาสตร์", badge:"#2C5F8A",
+    icon:`<path d="M9.2 3h5.6v5l4 8.2a1.5 1.5 0 01-1.35 2.15H6.55A1.5 1.5 0 015.2 16.2l4-8.2z" fill="#fff"/><rect x="9.2" y="3" width="5.6" height="1.5" rx="0.4" fill="#2C5F8A"/><circle cx="10.3" cy="15.2" r="0.9" fill="#2C5F8A"/><circle cx="13.6" cy="16.6" r="0.7" fill="#2C5F8A"/><circle cx="12" cy="12.8" r="0.6" fill="#2C5F8A"/>`
+  },
+  {
+    key:"horror", title:"สยองขวัญ", badge:"#6B1E1E",
+    icon:`<path d="M12 2.7c-4 0-7.2 3.2-7.2 7.2v10.6l2.3-1.9 2.2 1.9 2.7-1.9 2.7 1.9 2.2-1.9 2.3 1.9V9.9c0-4-3.2-7.2-7.2-7.2z" fill="#fff"/><circle cx="9.2" cy="10.2" r="1.1" fill="#6B1E1E"/><circle cx="14.8" cy="10.2" r="1.1" fill="#6B1E1E"/>`
+  }
+];
+
+/* ===================================================================
+   REWARDS - redeemable with points
+   (ค่าเริ่มต้น/ข้อมูลสำรอง ใช้ตอน seed ข้อมูลลง Firestore ครั้งแรก หรือใช้
+   แทนถ้า Firestore ยังว่างเปล่า/เชื่อมต่อไม่ได้ - ข้อมูลจริงที่ใช้แสดงผลจะถูก
+   โหลดจาก Firestore collection "rewardsCatalog" แทนตัวแปร "rewards" ด้านล่างนี้)
+=================================================================== */
+const DEFAULT_REWARDS = [
+  {
+    /* 300 แต้ม: กระเป๋าผ้า */
+    key:"large", title:"กระเป๋าผ้า", cost:300, color:"#B4791F", img:"forbook.png?v=2",
+    icon:`<path d="M8.1 9.4V6.9a3.9 3.9 0 017.8 0v2.5" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><path d="M5.3 9.4h13.4l1.2 10.4a1.4 1.4 0 01-1.4 1.6H5.5a1.4 1.4 0 01-1.4-1.6z" fill="#fff"/><rect x="10.4" y="11.8" width="3.2" height="2.4" rx="0.5" fill="#B4791F"/>`
+  },
+  {
+    /* 200 แต้ม: กระเป๋าใส่ปากกา-ดินสอ */
+    key:"medium", title:"กระเป๋าใส่ปากกา", cost:200, color:"#2E8069", img:"forpen.png?v=2",
+    icon:`<rect x="4.2" y="9.2" width="15.6" height="10.6" rx="3.4" fill="#fff"/><path d="M4.2 12.6h15.6" stroke="#2E8069" stroke-width="1.1"/><path d="M14.3 9.2l2.6-4.5c.3-.5 1-.65 1.45-.28l.5.4c.4.33.46 1 .12 1.42L15.9 9.9" fill="#2E8069"/><circle cx="7" cy="16" r="0.9" fill="#2E8069"/>`
+  },
+  {
+    /* 100 แต้ม: ปากกาสวยงาม */
+    key:"small", title:"ปากกา", cost:100, color:"#1F6E5C", img:"forwrite.png?v=2",
+    icon:`<path d="M6.3 17.7l1.9-5.1 8.7-8.7a1.85 1.85 0 012.6 2.6l-8.7 8.7-5.1 1.9z" fill="#fff"/><path d="M8.2 12.6l3.2 3.2" stroke="#1F6E5C" stroke-width="1.3" stroke-linecap="round"/><circle cx="6.1" cy="17.9" r="1.2" fill="#fff"/>`
+  },
+  {
+    /* รางวัลลับ: ยังไม่กำหนดแต้มตายตัว (แสดง "-" แทนตัวเลข) */
+    key:"secret", title:"รางวัลลับ", cost:"-", color:"#6B3FA0", img:"fordrink.png",
+    icon:`<path d="M9 3h6l-1 6h2l-6.5 12 1.5-8H8z" fill="#fff"/>`
+  }
+];
+
+/* ===================================================================
+   BOOKS (flattened list - index order below is the wire "zoneIdx")
+   (ค่าเริ่มต้น/ข้อมูลสำรอง ใช้ตอน seed ข้อมูลลง Firestore ครั้งแรก หรือใช้แทน
+   ถ้า Firestore ยังว่างเปล่า/เชื่อมต่อไม่ได้ - ข้อมูลจริงที่ใช้แสดงผลจะถูก
+   โหลดจาก Firestore collection "content" แทนตัวแปร "books" ด้านล่างนี้)
+=================================================================== */
+const DEFAULT_BOOKS = [
+  {
+    key:"sukhothai", categoryKey:"history", title:"อาณาจักรสุโขทัย", color:"#2F5D4E",
+    passage:"อาณาจักรสุโขทัยได้รับการสถาปนาขึ้นในราวพุทธศตวรรษที่ 18 ถือเป็นราชธานีแห่งแรกของคนไทยที่มีหลักฐานทางประวัติศาสตร์ชัดเจน กษัตริย์ผู้ทรงสถาปนาคือ พ่อขุนศรีอินทราทิตย์ สุโขทัยเจริญรุ่งเรืองอย่างมากในรัชสมัยของพ่อขุนรามคำแหงมหาราช ผู้ทรงประดิษฐ์อักษรไทยขึ้นใน พ.ศ. 1826 ด้านการปกครองใช้รูปแบบ 'พ่อปกครองลูก' กษัตริย์มีความใกล้ชิดกับประชาชน อีกทั้งยังมีการค้าขายอย่างเสรีดังปรากฏในหลักศิลาจารึกว่า 'ในน้ำมีปลา ในนามีข้าว' นอกจากนี้ยังเป็นยุคที่พระพุทธศาสนานิกายลังกาวงศ์เข้ามาเผยแผ่จนเจริญรุ่งเรือง",
+    questions:[
+      { q:"อาณาจักรสุโขทัยถือเป็นราชธานีแห่งแรกที่มีสิ่งใดชัดเจน", options:["หลักฐานทางประวัติศาสตร์","กองทัพที่ยิ่งใหญ่ที่สุด","การติดต่อกับยุโรป","กำแพงเมืองคอนกรีต"], correct:0 },
+      { q:"ปฐมกษัตริย์ผู้ทรงสถาปนาอาณาจักรสุโขทัยคือใคร", options:["พ่อขุนรามคำแหงมหาราช","พ่อขุนศรีอินทราทิตย์","สมเด็จพระนเรศวรมหาราช","พระยาลิไทย"], correct:1 },
+      { q:"พ่อขุนรามคำแหงมหาราชทรงประดิษฐ์อักษรไทยขึ้นเมื่อ พ.ศ. ใด", options:["พ.ศ. 1792","พ.ศ. 1826","พ.ศ. 1900","พ.ศ. 2000"], correct:1 },
+      { q:"การปกครองในสมัยสุโขทัยมีลักษณะแบบใด", options:["เทวราชา","พ่อปกครองลูก","ประชาธิปไตย","สมบูรณาญาสิทธิราชย์"], correct:1 },
+      { q:"ศาสนาใดเข้ามามีอิทธิพลและเจริญรุ่งเรืองในสมัยสุโขทัย", options:["พระพุทธศาสนานิกายลังกาวงศ์","ศาสนาพราหมณ์-ฮินดู","ศาสนาคริสต์","ศาสนาอิสลาม"], correct:0 }
+    ]
+  },
+  {
+    key:"ayutthaya", categoryKey:"history", title:"อาณาจักรอยุธยา", color:"#2E6E7E",
+    passage:"อาณาจักรอยุธยาถูกสถาปนาขึ้นโดย สมเด็จพระรามาธิบดีที่ 1 (พระเจ้าอู่ทอง) ใน พ.ศ. 1893 มีศูนย์กลางอยู่ที่เกาะเมืองอยุธยาซึ่งมีแม่น้ำสำคัญ 3 สายล้อมรอบ ได้แก่ แม่น้ำเจ้าพระยา แม่น้ำป่าสัก และแม่น้ำลพบุรี อยุธยาเป็นราชธานีที่ยาวนานถึง 417 ปี มีกษัตริย์ปกครอง 33 พระองค์ มีความเจริญรุ่งเรืองทั้งด้านการทหาร วัฒนธรรม และการค้ากับต่างประเทศ โดยเฉพาะในสมัยสมเด็จพระนารายณ์มหาราชที่มีการส่งเจริญสัมพันธไมตรีกับประเทศฝรั่งเศส แม้จะเสียกรุงศรีอยุธยาถึง 2 ครั้ง แต่ก็ได้รับการกอบกู้เอกราชคืนมาได้เสมอ",
+    questions:[
+      { q:"ผู้สถาปนากรุงศรีอยุธยาคือใคร", options:["สมเด็จพระนเรศวรมหาราช","สมเด็จพระรามาธิบดีที่ 1 (พระเจ้าอู่ทอง)","สมเด็จพระเอกาทศรถ","สมเด็จพระนารายณ์มหาราช"], correct:1 },
+      { q:"กรุงศรีอยุธยามีอายุเป็นราชธานียาวนานกี่ปี", options:["200 ปี","300 ปี","417 ปี","500 ปี"], correct:2 },
+      { q:"แม่น้ำสายใดไม่ได้ล้อมรอบเกาะเมืองอยุธยา", options:["แม่น้ำเจ้าพระยา","แม่น้ำป่าสัก","แม่น้ำลพบุรี","แม่น้ำแม่กลอง"], correct:3 },
+      { q:"ในรัชสมัยใดที่มีการส่งทูตไปเจริญสัมพันธไมตรีกับประเทศฝรั่งเศส", options:["สมเด็จพระนารายณ์มหาราช","สมเด็จพระบรมไตรโลกนาถ","สมเด็จพระนเรศวรมหาราช","พระเจ้าตากสินมหาราช"], correct:0 },
+      { q:"กรุงศรีอยุธยาเสียกรุงรวมทั้งหมดกี่ครั้ง", options:["1 ครั้ง","2 ครั้ง","3 ครั้ง","4 ครั้ง"], correct:1 }
+    ]
+  },
+  {
+    key:"thonburi", categoryKey:"history", title:"อาณาจักรธนบุรี", color:"#2B4D2E",
+    passage:"หลังจากเสียกรุงศรีอยุธยาครั้งที่สองใน พ.ศ. 2310 พระยาตาก (สิน) ได้กอบกู้เอกราชคืนมาได้ภายในเวลาเพียง 7 เดือน และทรงสถาปนา 'กรุงธนบุรี' เป็นราชธานีแห่งใหม่ เนื่องจากอยุธยาเสียหายหนักเกินกว่าจะฟื้นฟู และธนบุรีมีชัยภูมิทางยุทธศาสตร์ที่ดี ติดแม่น้ำเจ้าพระยา ใกล้ทะเล สะดวกแก่การค้าขายและตั้งรับศัตรู สมเด็จพระเจ้าตากสินมหาราชทรงทำสงครามรวบรวมแผ่นดินให้เป็นปรกแผ่น ฟื้นฟูเศรษฐกิจ ศาสนา และศิลปวัฒนธรรมตลอดรัชกาล 15 ปี ก่อนจะสิ้นสุดยุคธนบุรีลง",
+    questions:[
+      { q:"ใครเป็นผู้กอบกู้เอกราชและสถาปนากรุงธนบุรี", options:["พระบาทสมเด็จพระพุทธยอดฟ้าจุฬาโลกมหาราช","สมเด็จพระเจ้าตากสินมหาราช","สมเด็จพระนเรศวรมหาราช","พ่อขุนรามคำแหงมหาราช"], correct:1 },
+      { q:"สมเด็จพระเจ้าตากสินทรงใช้เวลากี่เดือนในการกอบกู้เอกราชหลังเสียกรุงครั้งที่ 2", options:["5 เดือน","7 เดือน","12 เดือน","2 ปี"], correct:1 },
+      { q:"ข้อใดเป็นเหตุผลสำคัญในการย้ายราชธานีมายังกรุงธนบุรี", options:["อยุธยาเสียหายหนักและธนบุรีใกล้ทะเลสะดวกแก่การค้า","ธนบุรีมีพื้นที่กว้างขวางกว่า","อยุธยาไม่มีแม่น้ำไหลผ่าน","ประชาชนต้องการย้ายเมือง"], correct:0 },
+      { q:"กรุงธนบุรีเป็นราชธานียาวนานกี่ปี", options:["10 ปี","15 ปี","20 ปี","25 ปี"], correct:1 },
+      { q:"สมเด็จพระเจ้าตากสินมหาราชทรงเน้นภารกิจหลักด้านใดในรัชสมัยของพระองค์", options:["การขยายอาณาเขตไปยุโรป","การรวบรวมแผ่นดินและฟื้นฟูบ้านเมือง","การสร้างพระปรางค์วัดอรุณ","การทำสงครามเรือรบ"], correct:1 }
+    ]
+  },
+  {
+    key:"rattanakosin_early", categoryKey:"history", title:"รัตนโกสินทร์ตอนต้น", color:"#C1502E",
+    passage:"ใน พ.ศ. 2325 พระบาทสมเด็จพระพุทธยอดฟ้าจุฬาโลกมหาราช (รัชกาลที่ 1) ทรงสถาปนากรุงรัตนโกสินทร์ขึ้นทางฝั่งตะวันออกของแม่น้ำเจ้าพระยา (กรุงเทพมหานคร) ทรงสร้างพระบรมมหาราชวังและวัดพระศรีรัตนศาสดาราม ในยุคนี้มีการฟื้นฟูกฎหมายโดยสังคายนา 'กฎหมายตราสามดวง' และสังคายนาพระไตรปิฎก รัชกาลที่ 2 และรัชกาลที่ 3 ทรงส่งเสริมวรรณคดีและการค้ากับจีนอย่างขยายตัว เกิดวรรณคดีสำคัญอย่างขุนช้างขุนแผนและพระอภัยมณี ถือเป็นยุคแห่งการสร้างสรรค์และวางรากฐานความมั่นคงให้แก่ประเทศ",
+    questions:[
+      { q:"พระมหากษัตริย์พระองค์ใดทรงสถาปนากรุงรัตนโกสินทร์", options:["รัชกาลที่ 1","รัชกาลที่ 2","รัชกาลที่ 3","รัชกาลที่ 4"], correct:0 },
+      { q:"กรุงรัตนโกสินทร์ได้รับการสถาปนาขึ้นใน พ.ศ. ใด", options:["พ.ศ. 2310","พ.ศ. 2325","พ.ศ. 2410","พ.ศ. 2475"], correct:1 },
+      { q:"กฎหมายสำคัญที่มีการสังคายนาในรัชกาลที่ 1 คือกฎหมายใด", options:["กฎหมายตราสามดวง","กฎหมายลักษณะอาญา","รัฐธรรมนูญ","กฎหมายมณเฑียรบาล"], correct:0 },
+      { q:"ในสมัยรัชกาลที่ 3 มีการส่งเสริมการค้าขายกับประเทศใดเป็นพิเศษ", options:["อังกฤษ","ฝรั่งเศส","จีน","โปรตุเกส"], correct:2 },
+      { q:"วัดสำคัญที่สร้างขึ้นพร้อมกับการสถาปนากรุงรัตนโกสินทร์คือวัดใด", options:["วัดอรุณราชวราราม","วัดพระศรีรัตนศาสดาราม","วัดบวรนิเวศวิหาร","วัดสุทัศนเทพวราราม"], correct:1 }
+    ]
+  },
+  {
+    key:"rattanakosin_modern", categoryKey:"history", title:"การปฏิรูปสู่สยามสมัยใหม่", color:"#7A2E2E",
+    passage:"ช่วงรัชกาลที่ 4 ถึงรัชกาลที่ 5 สยามเผชิญกับการคุกคามจากมหาอำนาจตะวันตก พระบาทสมเด็จพระจุลจอมเกล้าเจ้าอยู่หัว (รัชกาลที่ 5) จึงทรงปฏิรูปประเทศครั้งใหญ่ในทุกด้าน เช่น การเลิกทาส การเลิกไพร่ การจัดตั้งกระทรวงแบบใหม่ การสร้างรถไฟ โทรเลข และโรงพยาบาล ทำให้ประเทศไทยรักษาเอกราชไว้ได้เพียงประเทศเดียวในภูมิภาค ต่อมาใน พ.ศ. 2475 ได้เกิดการเปลี่ยนแปลงการปกครองมาเป็นระบอบประชาธิปไตยอันมีพระมหากษัตริย์ทรงเป็นประธาน และเปลี่ยนชื่อประเทศจาก 'สยาม' เป็น 'ไทย' ในเวลาต่อมา",
+    questions:[
+      { q:"พระมหากษัตริย์พระองค์ใดทรงทำการปฏิรูปประเทศครั้งใหญ่และทรงเลิกทาส", options:["พระบาทสมเด็จพระจอมเกล้าเจ้าอยู่หัว (รัชกาลที่ 4)","พระบาทสมเด็จพระจุลจอมเกล้าเจ้าอยู่หัว (รัชกาลที่ 5)","พระบาทสมเด็จพระมงกุฎเกล้าเจ้าอยู่หัว (รัชกาลที่ 6)","พระบาทสมเด็จพระปกเกล้าเจ้าอยู่หัว (รัชกาลที่ 7)"], correct:1 },
+      { q:"การปฏิรูปประเทศในสมัยรัชกาลที่ 5 มีเป้าหมายสำคัญเพื่อสิ่งใด", options:["ขยายอาณาเขตไปรบต่างแดน","รักษาเอกราชและพาประเทศสู่ความทันสมัย","เพิ่มภาษีอากร","สร้างปราสาทหิน"], correct:1 },
+      { q:"ประเทศไทยเปลี่ยนแปลงการปกครองมาเป็นระบอบประชาธิปไตยใน พ.ศ. ใด", options:["พ.ศ. 2411","พ.ศ. 2475","พ.ศ. 2482","พ.ศ. 2500"], correct:1 },
+      { q:"สาธารณูปโภคแรกๆ ที่เริ่มเกิดขึ้นในสมัยปฏิรูปประเทศคือข้อใด", options:["รถไฟและโทรเลข","สนามบินนานาชาติ","ดาวเทียมสื่อสาร","ทางด่วนยกระดับ"], correct:0 },
+      { q:"ชื่อประเทศถูกเปลี่ยนจาก 'สยาม' เป็น 'ไทย' ในช่วงหลังการเปลี่ยนแปลงสิ่งใด", options:["การเปลี่ยนรัชกาล","การเปลี่ยนแปลงการปกครอง","การสงครามโลกครั้งที่ 1","การเลิกทาส"], correct:1 }
+    ]
+  },
+  {
+    key:"novel1", categoryKey:"novel", title:"แสงสุดท้ายที่ท่าเรือ", color:"#6B3550",
+    passage:"เมฆสีส้มลอยต่ำเหนือท่าเรือเล็ก ๆ ของหมู่บ้านชายฝั่ง มะลิยืนอยู่ริมท่าไม้เก่า มือกำผ้าพันคอผืนเดิมที่พ่อเคยใช้ตอนออกเรือ วันนี้เป็นวันที่สิบสี่แล้วที่เรือของพ่อยังไม่กลับมา ชาวบ้านบางคนกระซิบกันว่าพายุลูกก่อนอาจพัดเรือให้หลงทาง แต่มะลิไม่ยอมเชื่อ เธอยังคงเดินมานั่งที่ท่าเรือทุกเย็นเหมือนที่เคยทำมาตลอดสิบสามปีที่ผ่านมา เพื่อนบ้านชื่อลุงเคียมเดินมานั่งข้าง ๆ พร้อมโคมไฟเก่า พูดเบา ๆ ว่า 'ทะเลใจดีกับคนที่ไม่ยอมแพ้เสมอนะ' แล้วทั้งสองก็นั่งมองแสงสุดท้ายของวันจมลงสู่เส้นขอบฟ้าด้วยกัน",
+    questions:[
+      { q:"มะลิยืนรออยู่ที่ใด", options:["สถานีรถไฟ","ท่าเรือของหมู่บ้าน","ตลาดเช้า","สนามบิน"], correct:1 },
+      { q:"มะลิถือสิ่งใดติดมือไว้", options:["ร่มสีแดง","ผ้าพันคอของพ่อ","หนังสือเก่า","ตะกร้าผลไม้"], correct:1 },
+      { q:"เรือของพ่อหายไปนานกี่วันแล้ว", options:["7 วัน","10 วัน","14 วัน","20 วัน"], correct:2 },
+      { q:"ใครเดินมานั่งข้าง ๆ มะลิที่ท่าเรือ", options:["แม่ของมะลิ","ลุงเคียม","ครูประจำหมู่บ้าน","เพื่อนสนิท"], correct:1 },
+      { q:"ลุงเคียมพูดประโยคใดกับมะลิ", options:["'พรุ่งนี้อากาศจะดีขึ้น'","'ทะเลใจดีกับคนที่ไม่ยอมแพ้เสมอนะ'","'กลับบ้านไปพักผ่อนเถอะ'","'อย่ามัวแต่รอเลย'"], correct:1 }
+    ]
+  },
+  {
+    key:"novel2", categoryKey:"novel", title:"จดหมายที่ไม่ได้ส่ง", color:"#8B4A63",
+    passage:"สมชายทำงานเป็นบุรุษไปรษณีย์มาสามสิบปี วันหนึ่งขณะจัดของในห้องเก็บพัสดุเก่า เขาพบกล่องกระดาษใบหนึ่งซุกอยู่หลังชั้นวางที่ไม่มีใครแตะต้องมานาน ข้างในมีจดหมายผู้หญิงคนหนึ่งเขียนถึงคนรักเมื่อสี่สิบกว่าปีก่อน แต่ไม่เคยถูกส่งออกไปเพราะที่อยู่บนซองเลือนจนอ่านไม่ออก สมชายอ่านจดหมายอย่างตั้งใจ พบว่าผู้เขียนชื่อวิไล เขาใช้เวลาหลายสัปดาห์สืบหาว่าวิไลยังมีชีวิตอยู่หรือไม่ จนในที่สุดก็พบว่าเธออาศัยอยู่ในบ้านพักคนชราไม่ไกลจากที่ทำการไปรษณีย์นัก เมื่อสมชายนำจดหมายไปมอบให้ วิไลถึงกับน้ำตาไหล เธอบอกว่ารอคำตอบนี้มาทั้งชีวิต",
+    questions:[
+      { q:"สมชายทำงานอาชีพใด", options:["ครู","บุรุษไปรษณีย์","ตำรวจ","ชาวประมง"], correct:1 },
+      { q:"สมชายพบจดหมายที่ใด", options:["ใต้เตียงบ้านตัวเอง","ห้องเก็บพัสดุเก่า","ในรถไปรษณีย์","ที่สนามหญ้าหลังบ้าน"], correct:1 },
+      { q:"เหตุใดจดหมายจึงไม่เคยถูกส่งออกไป", options:["ผู้เขียนเปลี่ยนใจ","ที่อยู่บนซองเลือนจนอ่านไม่ออก","ไม่มีแสตมป์ติด","ไปรษณีย์ปิดทำการ"], correct:1 },
+      { q:"ผู้เขียนจดหมายชื่ออะไร", options:["มะลิ","วิไล","สมหญิง","อำไพ"], correct:1 },
+      { q:"สุดท้ายสมชายพบผู้เขียนจดหมายอยู่ที่ใด", options:["บ้านพักคนชรา","ต่างจังหวัด","ต่างประเทศ","วัด"], correct:0 }
+    ]
+  },
+  {
+    key:"novel3", categoryKey:"novel", title:"ร้านหนังสือปลายซอย", color:"#63304A",
+    passage:"เอมชอบเดินลัดเลาะตามตรอกเล็ก ๆ หลังโรงเรียนเป็นประจำ จนวันหนึ่งเธอสังเกตเห็นร้านหนังสือเก่าที่ไม่เคยเห็นมาก่อน ป้ายหน้าร้านเขียนด้วยลายมือว่า 'ร้านหนังสือปลายซอย เปิดเฉพาะผู้ที่กำลังตามหาบางสิ่ง' เอมเดินเข้าไปด้วยความสงสัย พบชายชราใจดีนั่งอยู่หลังเคาน์เตอร์ไม้เก่า เขาถามเธอว่ากำลังตามหาอะไรอยู่ เอมตอบไปโดยไม่ทันคิดว่า 'หนูอยากรู้ว่าจะเก่งเลขได้ยังไง' ชายชรายิ้มแล้วหยิบหนังสือเล่มบาง ๆ สีฟ้าซีดจากชั้นด้านในสุดมาให้ ภายในเล่มไม่มีสูตรคณิตศาสตร์เลยสักบรรทัด มีเพียงเรื่องราวของเด็กที่ไม่ยอมแพ้ต่อโจทย์ยาก ๆ ทีละข้อจนเก่งขึ้นทุกวัน",
+    questions:[
+      { q:"เอมพบร้านหนังสือที่ใด", options:["ในห้างสรรพสินค้า","ตรอกเล็ก ๆ หลังโรงเรียน","ริมแม่น้ำ","สถานีรถไฟ"], correct:1 },
+      { q:"ป้ายหน้าร้านเขียนว่าร้านเปิดสำหรับใคร", options:["นักเรียนชั้นมัธยม","ผู้ที่กำลังตามหาบางสิ่ง","นักสะสมของเก่า","คนในหมู่บ้านเท่านั้น"], correct:1 },
+      { q:"ใครนั่งอยู่หลังเคาน์เตอร์ในร้าน", options:["เด็กหญิงคนหนึ่ง","ชายชราใจดี","หุ่นยนต์","ไม่มีใครเลย"], correct:1 },
+      { q:"เอมบอกว่าตัวเองอยากรู้เรื่องอะไร", options:["วิธีทำอาหาร","วิธีเก่งเลข","วิธีวาดรูป","วิธีว่ายน้ำ"], correct:1 },
+      { q:"หนังสือที่ชายชรายื่นให้มีเนื้อหาเกี่ยวกับอะไร", options:["สูตรคณิตศาสตร์ล้วน ๆ","เด็กที่ไม่ยอมแพ้ต่อโจทย์ยากจนเก่งขึ้น","ประวัติศาสตร์ร้านหนังสือ","นิทานสัตว์ป่า"], correct:1 }
+    ]
+  },
+  {
+    key:"insp1", categoryKey:"inspire", title:"ก้าวเล็ก ๆ ที่ไม่หยุดเดิน", color:"#1F6E5C",
+    passage:"หลายคนล้มเลิกความฝันไม่ใช่เพราะไม่มีความสามารถ แต่เพราะคาดหวังว่าความสำเร็จต้องมาไวและยิ่งใหญ่ตั้งแต่ก้าวแรก นักวิ่งมาราธอนทุกคนไม่ได้เริ่มจากการวิ่งสี่สิบกิโลเมตร แต่เริ่มจากการวิ่งรอบบ้านเพียงไม่กี่นาทีในแต่ละวัน สิ่งสำคัญไม่ใช่ก้าวที่ยาวที่สุด แต่คือก้าวที่สม่ำเสมอที่สุด เมื่อเราโฟกัสที่การทำสิ่งเล็ก ๆ ให้ดีขึ้นทีละนิดทุกวัน ผลลัพธ์ที่ยิ่งใหญ่จะค่อย ๆ ก่อตัวขึ้นเองโดยที่เราแทบไม่ทันสังเกต ความอดทนต่อความก้าวหน้าที่ดูช้าในวันนี้ คือรากฐานของความสำเร็จที่มั่นคงในวันข้างหน้า",
+    questions:[
+      { q:"ตามเนื้อหา คนส่วนใหญ่ล้มเลิกความฝันเพราะเหตุใด", options:["ไม่มีความสามารถ","คาดหวังความสำเร็จที่มาไวและยิ่งใหญ่ตั้งแต่แรก","ไม่มีเวลาว่าง","ขาดเงินทุน"], correct:1 },
+      { q:"เนื้อหายกตัวอย่างนักกีฬาประเภทใด", options:["นักว่ายน้ำ","นักวิ่งมาราธอน","นักปั่นจักรยาน","นักมวย"], correct:1 },
+      { q:"นักวิ่งมาราธอนเริ่มต้นจากอะไรตามเนื้อหา", options:["วิ่ง 40 กิโลเมตรทันที","วิ่งรอบบ้านไม่กี่นาทีต่อวัน","ฝึกในยิมหกชั่วโมง","ไม่ได้ฝึกเลย"], correct:1 },
+      { q:"สิ่งที่สำคัญที่สุดตามเนื้อหาคืออะไร", options:["ก้าวที่ยาวที่สุด","ก้าวที่สม่ำเสมอที่สุด","ก้าวที่เร็วที่สุด","ก้าวแรกเท่านั้น"], correct:1 },
+      { q:"ความอดทนต่อความก้าวหน้าที่ดูช้าในวันนี้ ตามเนื้อหาคือสิ่งใด", options:["ความสูญเปล่า","รากฐานของความสำเร็จในวันข้างหน้า","สัญญาณของความล้มเหลว","เรื่องที่ควรหลีกเลี่ยง"], correct:1 }
+    ]
+  },
+  {
+    key:"insp2", categoryKey:"inspire", title:"ล้มแล้วลุกไว", color:"#2E8069",
+    passage:"ต้นไม้ใหญ่ที่ยืนต้นทนพายุได้ไม่ใช่เพราะไม่เคยโดนลมแรงพัด แต่เพราะรากของมันหยั่งลึกลงไปทุกครั้งที่เผชิญกับแรงเสียดทาน คนที่ประสบความสำเร็จส่วนใหญ่ไม่ใช่คนที่ไม่เคยล้มเหลว แต่เป็นคนที่ลุกขึ้นเร็วกว่าคนอื่นหลังจากล้ม ความผิดพลาดแต่ละครั้งแท้จริงแล้วคือข้อมูลที่บอกเราว่าวิธีเดิมยังไม่ใช่คำตอบ ไม่ใช่คำตัดสินว่าเราไม่มีค่า เมื่อเปลี่ยนมุมมองจาก 'ฉันล้มเหลว' เป็น 'ฉันเพิ่งเรียนรู้อะไรบางอย่าง' ความกลัวที่จะเริ่มใหม่ก็จะค่อย ๆ จางลง และพื้นที่สำหรับความกล้าก็จะเข้ามาแทนที่",
+    questions:[
+      { q:"เนื้อหาเปรียบคนที่ประสบความสำเร็จกับสิ่งใด", options:["สายลม","ต้นไม้ใหญ่ที่รากหยั่งลึก","แม่น้ำที่ไหลเชี่ยว","ก้อนหินแข็ง"], correct:1 },
+      { q:"ตามเนื้อหา คนที่ประสบความสำเร็จส่วนใหญ่มีลักษณะอย่างไร", options:["ไม่เคยล้มเหลวเลย","ลุกขึ้นเร็วกว่าคนอื่นหลังจากล้ม","หลีกเลี่ยงความเสี่ยงทุกชนิด","ทำงานคนเดียวเสมอ"], correct:1 },
+      { q:"ความผิดพลาดแต่ละครั้งตามเนื้อหาคือสิ่งใด", options:["คำตัดสินว่าไม่มีค่า","ข้อมูลที่บอกว่าวิธีเดิมยังไม่ใช่คำตอบ","เรื่องที่ควรปิดบัง","จุดจบของความพยายาม"], correct:1 },
+      { q:"เนื้อหาแนะนำให้เปลี่ยนมุมมองจากอะไรเป็นอะไร", options:["จาก 'ฉันเก่ง' เป็น 'ฉันแย่'","จาก 'ฉันล้มเหลว' เป็น 'ฉันเพิ่งเรียนรู้อะไรบางอย่าง'","จาก 'ฉันทำได้' เป็น 'ฉันทำไม่ได้'","ไม่มีการเปลี่ยนมุมมองใด ๆ"], correct:1 },
+      { q:"เมื่อความกลัวจางลง เนื้อหาบอกว่าอะไรจะเข้ามาแทนที่", options:["ความสงสัย","ความกล้า","ความเกียจคร้าน","ความเหนื่อยล้า"], correct:1 }
+    ]
+  },
+  {
+    key:"insp3", categoryKey:"inspire", title:"พลังของความเชื่อมั่น", color:"#B4791F",
+    passage:"ก่อนที่คนอื่นจะเชื่อในตัวเรา เราต้องเป็นคนแรกที่เชื่อในตัวเองเสียก่อน ความเชื่อมั่นไม่ได้เกิดจากการรอให้ทุกอย่างพร้อมสมบูรณ์แบบ แต่เกิดจากการลงมือทำสิ่งเล็ก ๆ ซ้ำแล้วซ้ำเล่าจนเห็นผลด้วยตัวเอง ทุกครั้งที่เราทำในสิ่งที่เคยกลัวสำเร็จ แม้จะเป็นเรื่องเล็กน้อยเพียงใด สมองของเราจะบันทึกหลักฐานใหม่ว่า 'เราทำได้' และหลักฐานเหล่านั้นจะค่อย ๆ สะสมกลายเป็นความเชื่อมั่นที่แท้จริง ไม่ใช่ความมั่นใจปลอม ๆ ที่ปั้นแต่งขึ้นมาเพื่อให้คนอื่นเห็น",
+    questions:[
+      { q:"เนื้อหาบอกว่าใครควรเป็นคนแรกที่เชื่อในตัวเรา", options:["เพื่อนสนิท","ตัวเราเอง","ครอบครัว","หัวหน้างาน"], correct:1 },
+      { q:"ความเชื่อมั่นเกิดจากอะไรตามเนื้อหา", options:["การรอให้ทุกอย่างพร้อมสมบูรณ์แบบ","การลงมือทำสิ่งเล็ก ๆ ซ้ำ ๆ จนเห็นผล","การฟังคำชมจากผู้อื่น","การเปรียบเทียบตัวเองกับคนอื่น"], correct:1 },
+      { q:"เมื่อทำสิ่งที่เคยกลัวสำเร็จ สมองจะบันทึกอะไร", options:["ความล้มเหลว","หลักฐานว่า 'เราทำได้'","ความสงสัยในตัวเอง","ไม่มีการบันทึกใด ๆ"], correct:1 },
+      { q:"เนื้อหาแยกความเชื่อมั่นที่แท้จริงออกจากสิ่งใด", options:["ความมั่นใจปลอม ๆ ที่ปั้นแต่งเพื่อให้คนอื่นเห็น","ความสำเร็จของคนอื่น","ความรู้ทางวิชาการ","คำชมจากครู"], correct:0 },
+      { q:"ตามเนื้อหา ความเชื่อมั่นสะสมมาจากอะไร", options:["โชคชะตา","หลักฐานเล็ก ๆ ที่สะสมจากการลงมือทำ","การนอนหลับพักผ่อน","การรอคอยเวลาที่เหมาะสม"], correct:1 }
+    ]
+  },
+  {
+    key:"novel4", categoryKey:"novel", title:"เสียงเปียโนจากบ้านเลขที่เก้า", color:"#7A3B66",
+    passage:"ทุกเย็นเวลาพลบค่ำ ต้นมักได้ยินเสียงเปียโนแว่วมาจากบ้านเก่าเลขที่เก้าที่อยู่ติดกับรั้วบ้านของเขา บ้านหลังนั้นดูทรุดโทรมและไม่มีใครเข้าออกในเวลากลางวันเลย ต้นสงสัยมานานจนวันหนึ่งเขาตัดสินใจเดินไปเคาะประตู คนที่มาเปิดคือหญิงชราใจดีชื่อครูสมพร เธอเล่าว่าหูของเธอหนวกสนิทมาหลายปีแล้ว แต่ยังคงเล่นเปียโนทุกเย็นเพราะจำทำนองเพลงที่สามีผู้ล่วงลับเคยแต่งให้ได้ทุกตัวโน้ต แม้จะไม่ได้ยินเสียงของตัวเองเลยก็ตาม ต้นฟังแล้วรู้สึกซาบซึ้งใจ นับแต่นั้นเขาก็แวะไปนั่งฟังครูสมพรเล่นเปียโนทุกเย็นเสาร์ แม้เธอจะไม่ได้ยินเสียงเพลงของตัวเอง แต่เธอบอกว่าการได้เห็นแขกใหม่มานั่งฟังก็ทำให้หัวใจของเธออบอุ่นเหมือนได้ยินเสียงเพลงอีกครั้ง",
+    questions:[
+      { q:"ต้นได้ยินเสียงอะไรทุกเย็น", options:["เสียงไวโอลิน","เสียงเปียโน","เสียงกีตาร์","เสียงระนาด"], correct:1 },
+      { q:"บ้านเลขที่เก้ามีลักษณะอย่างไร", options:["ทาสีใหม่สวยงาม","ทรุดโทรมไม่มีใครเข้าออกกลางวัน","มีรั้วสูงล้อมรอบ","เป็นบ้านสองชั้นใหม่"], correct:1 },
+      { q:"ครูสมพรมีปัญหาด้านใด", options:["ตาบอดสนิท","หูหนวกสนิทมาหลายปี","เดินไม่ได้","จำอะไรไม่ได้"], correct:1 },
+      { q:"ครูสมพรยังเล่นเปียโนได้เพราะอะไร", options:["มีโน้ตเพลงเก็บไว้","จำทำนองเพลงที่สามีแต่งให้ได้", "เรียนดนตรีใหม่ทุกวัน", "มีลูกศิษย์มาสอน"], correct:1 },
+      { q:"หลังจากนั้นต้นทำอะไรทุกเย็นเสาร์", options:["ไปนั่งฟังครูสมพรเล่นเปียโน","ไปช่วยซ่อมบ้าน","ไปสอนดนตรีให้ครูสมพร","ไปซื้อของให้ครูสมพร"], correct:0 }
+    ]
+  },
+  {
+    key:"novel5", categoryKey:"novel", title:"ร้านซ่อมนาฬิกาแห่งสุดท้าย", color:"#8B4A63",
+    passage:"แพรรับช่วงร้านซ่อมนาฬิกาเล็ก ๆ ต่อจากปู่หลังจากที่ท่านเสียชีวิตอย่างกะทันหัน ระหว่างจัดของในลิ้นชักเก่า เธอพบสมุดบันทึกเล่มหนึ่งที่ปู่เขียนถึงลูกค้าคนหนึ่งชื่อบุญเรือง ผู้ฝากนาฬิกาข้อมือเก่าไว้ซ่อมเมื่อสามสิบปีก่อนแต่ไม่เคยกลับมารับ ปู่เขียนไว้ว่าอยากซ่อมนาฬิกาเรือนนั้นให้เสร็จสมบูรณ์ที่สุดเพราะเป็นของขวัญที่บุญเรืองตั้งใจมอบให้คนรักก่อนต้องจากไปทำงานต่างเมือง แพรใช้เวลาหลายสัปดาห์สืบหาว่าบุญเรืองยังมีชีวิตอยู่หรือไม่ จนพบว่าท่านอาศัยอยู่กับลูกสาวในอีกจังหวัดหนึ่ง เมื่อแพรเดินทางไปส่งนาฬิกาที่ซ่อมเสร็จแล้ว บุญเรืองถึงกับน้ำตาคลอ เพราะนาฬิกาเรือนนี้คือของที่เขาตั้งใจจะมอบให้ภรรยาในวันครบรอบแต่งงานที่ไม่เคยมาถึง",
+    questions:[
+      { q:"แพรรับช่วงกิจการใดต่อจากปู่", options:["ร้านซ่อมนาฬิกา","ร้านทอง","ร้านหนังสือ","ร้านซ่อมรองเท้า"], correct:0 },
+      { q:"แพรพบอะไรในลิ้นชักเก่า", options:["จดหมายรัก","สมุดบันทึกของปู่","รูปถ่ายเก่า","เงินเก็บของปู่"], correct:1 },
+      { q:"บุญเรืองฝากนาฬิกาไว้ซ่อมนานเท่าใด", options:["สิบปี","ยี่สิบปี","สามสิบปี","สี่สิบปี"], correct:2 },
+      { q:"นาฬิกาเรือนนี้ตั้งใจจะมอบให้ใคร", options:["เพื่อนสนิท","คนรัก/ภรรยาของบุญเรือง","ลูกชาย","พ่อของบุญเรือง"], correct:1 },
+      { q:"สุดท้ายแพรพบบุญเรืองอยู่ที่ใด", options:["อาศัยอยู่กับลูกสาวในอีกจังหวัดหนึ่ง","ยังอยู่บ้านเดิม","ย้ายไปต่างประเทศ","เสียชีวิตไปแล้ว"], correct:0 }
+    ]
+  },
+  {
+    key:"insp4", categoryKey:"inspire", title:"เมล็ดพันธุ์แห่งความหวัง", color:"#1F6E5C",
+    passage:"ชาวสวนผู้มากประสบการณ์คนหนึ่งเคยกล่าวว่า ไม่มีใครเคยเห็นเมล็ดพันธุ์งอกในวันที่หว่านลงดิน ทุกเมล็ดต้องใช้เวลาอยู่ใต้ผืนดินอย่างเงียบ ๆ ก่อนจะแทงยอดขึ้นมาให้เห็น ความฝันของมนุษย์ก็เช่นเดียวกัน หลายครั้งที่เราลงมือทำสิ่งหนึ่งอย่างเต็มที่แล้วยังไม่เห็นผลในทันที เราจึงเข้าใจผิดคิดว่าตัวเองล้มเหลว ทั้งที่ความจริงแล้วรากฐานกำลังก่อตัวอยู่ใต้ผิวดินที่มองไม่เห็น การรดน้ำเมล็ดพันธุ์ทุกวันแม้จะยังไม่เห็นต้นอ่อนโผล่พ้นดิน คือสิ่งเดียวกับการฝึกฝนตัวเองอย่างสม่ำเสมอแม้ยังไม่เห็นความก้าวหน้าที่ชัดเจน ผู้ที่เก็บเกี่ยวผลสำเร็จได้ในท้ายที่สุด มักเป็นผู้ที่ไม่ถอนเมล็ดพันธุ์ของตนขึ้นมาดูรากก่อนเวลาอันควร",
+    questions:[
+      { q:"เนื้อหาเปรียบความฝันของมนุษย์กับสิ่งใด", options:["ต้นไม้ใหญ่","เมล็ดพันธุ์ที่หว่านลงดิน","สายน้ำ","ก้อนหิน"], correct:1 },
+      { q:"เมล็ดพันธุ์ต้องทำอะไรก่อนจะแทงยอด", options:["ถูกแดดเผาโดยตรง","อยู่ใต้ผืนดินอย่างเงียบ ๆ","ถูกย้ายกระถางทันที","ลอยอยู่บนน้ำ"], correct:1 },
+      { q:"หลายคนเข้าใจผิดว่าตัวเองล้มเหลวเพราะเหตุใด", options:["ยังไม่เห็นผลในทันที","ไม่มีเงินทุน","ไม่มีคนช่วยเหลือ","ไม่มีความรู้พอ"], correct:0 },
+      { q:"การรดน้ำเมล็ดพันธุ์ทุกวันเปรียบได้กับสิ่งใด", options:["การพักผ่อน","การฝึกฝนตัวเองอย่างสม่ำเสมอ","การรอโชคชะตา","การเปรียบเทียบกับผู้อื่น"], correct:1 },
+      { q:"ผู้ที่ประสบความสำเร็จมักไม่ทำสิ่งใดตามเนื้อหา", options:["รดน้ำทุกวัน","ถอนเมล็ดพันธุ์ขึ้นมาดูรากก่อนเวลาอันควร","หว่านเมล็ดใหม่","ดูแลดิน"], correct:1 }
+    ]
+  },
+  {
+    key:"insp5", categoryKey:"inspire", title:"ประตูที่ไม่เคยปิด", color:"#2E8069",
+    passage:"หลายคนเสียใจกับโอกาสที่พลาดไปในอดีต จนลืมมองไปว่ายังมีประตูอีกหลายบานที่ยังเปิดรออยู่ตรงหน้า ความจริงแล้วชีวิตไม่ได้มีประตูเพียงบานเดียว เมื่อประตูหนึ่งปิดลง มักมีประตูอีกบานหนึ่งเปิดขึ้นเสมอ เพียงแต่บางครั้งเรามัวแต่จ้องมองประตูที่ปิดไปแล้วนานเกินไป จนไม่ทันสังเกตเห็นบานใหม่ที่อยู่ข้าง ๆ คนที่ประสบความสำเร็จหลายคนเริ่มต้นเส้นทางที่แตกต่างไปจากแผนเดิมโดยสิ้นเชิง เพราะพวกเขากล้าเดินเข้าประตูบานใหม่แทนที่จะยืนร้องไห้อยู่หน้าประตูบานเก่า การให้อภัยตัวเองสำหรับโอกาสที่พลาดไปแล้ว คือก้าวแรกที่จะทำให้มองเห็นประตูบานใหม่ได้ชัดเจนขึ้น",
+    questions:[
+      { q:"เนื้อหาบอกว่าชีวิตมีประตูกี่บาน", options:["บานเดียวเท่านั้น","หลายบาน ไม่ใช่บานเดียว","ไม่มีประตูเลย","สองบานเท่านั้น"], correct:1 },
+      { q:"เมื่อประตูหนึ่งปิดลง เนื้อหาบอกว่าจะเกิดอะไรขึ้น", options:["ไม่มีอะไรเกิดขึ้นอีก","มักมีประตูอีกบานหนึ่งเปิดขึ้นเสมอ","ต้องรอสิบปี","ต้องสร้างประตูใหม่เอง"], correct:1 },
+      { q:"เหตุใดหลายคนจึงมองไม่เห็นประตูบานใหม่", options:["ไม่มีประตูบานใหม่จริง","มัวแต่จ้องมองประตูที่ปิดไปแล้วนานเกินไป","ประตูบานใหม่มืดเกินไป","ไม่มีกุญแจ"], correct:1 },
+      { q:"คนที่ประสบความสำเร็จหลายคนมีลักษณะอย่างไรตามเนื้อหา", options:["ยึดติดกับแผนเดิมเสมอ","กล้าเดินเข้าประตูบานใหม่ที่ต่างจากแผนเดิม","รอให้คนอื่นช่วยเปิดประตู","ไม่เคยพลาดโอกาสเลย"], correct:1 },
+      { q:"ก้าวแรกที่จะมองเห็นประตูบานใหม่ได้ชัดคืออะไร", options:["การโทษคนอื่น","การให้อภัยตัวเองสำหรับโอกาสที่พลาดไปแล้ว","การรอเวลาที่สมบูรณ์แบบ","การเปรียบเทียบกับคนอื่น"], correct:1 }
+    ]
+  },
+  {
+    key:"agri1", categoryKey:"agri", title:"ดินดีเริ่มต้นอย่างไร", color:"#4E7A34",
+    passage:"ดินที่ดีสำหรับการเพาะปลูกไม่ได้วัดกันแค่สีเข้มหรือความร่วนซุยเท่านั้น แต่ต้องมีองค์ประกอบสามส่วนที่สมดุลกัน คือ อนุภาคดิน อากาศ และน้ำ ดินที่มีอินทรียวัตถุสูงจะช่วยให้รากพืชแทรกตัวได้ง่ายและเก็บความชื้นได้ดีขึ้น เกษตรกรที่มีประสบการณ์มักตรวจสอบค่าความเป็นกรด-ด่างของดินหรือค่า pH ก่อนปลูกพืชทุกครั้ง เพราะพืชแต่ละชนิดต้องการค่า pH ที่แตกต่างกัน หากดินเป็นกรดจัดเกินไปจะทำให้รากพืชดูดซึมธาตุอาหารบางชนิดได้ยาก การใส่ปูนขาวหรือเถ้าไม้ในปริมาณที่เหมาะสมสามารถช่วยปรับสภาพดินที่เป็นกรดให้เป็นกลางมากขึ้นได้ นอกจากนี้การไถพรวนดินให้ลึกพอเหมาะยังช่วยให้อากาศแทรกซึมลงไปหล่อเลี้ยงจุลินทรีย์ในดินซึ่งมีบทบาทสำคัญในการย่อยสลายอินทรียวัตถุให้กลายเป็นธาตุอาหารพืช",
+    questions:[
+      { q:"ดินที่ดีต้องมีองค์ประกอบใดสมดุลกัน", options:["อนุภาคดิน อากาศ และน้ำ","หินและทราย","ปุ๋ยเคมีและยาฆ่าแมลง","น้ำอย่างเดียว"], correct:0 },
+      { q:"เกษตรกรมักตรวจสอบค่าใดก่อนปลูกพืช", options:["อุณหภูมิอากาศ","ค่าความเป็นกรด-ด่าง (pH) ของดิน","ความเร็วลม","สีของท้องฟ้า"], correct:1 },
+      { q:"ถ้าดินเป็นกรดจัดเกินไปจะเกิดผลอย่างไร", options:["พืชโตเร็วขึ้น","รากพืชดูดซึมธาตุอาหารบางชนิดได้ยาก","ดินร่วนซุยขึ้น","ไม่มีผลใด ๆ"], correct:1 },
+      { q:"การใส่สิ่งใดช่วยปรับสภาพดินที่เป็นกรดให้เป็นกลางขึ้น", options:["น้ำตาลทราย","ปูนขาวหรือเถ้าไม้","น้ำมันพืช","เกลือแกง"], correct:1 },
+      { q:"การไถพรวนดินให้ลึกพอเหมาะช่วยเรื่องใด", options:["ทำให้ดินแน่นขึ้น","ช่วยให้อากาศแทรกซึมลงไปหล่อเลี้ยงจุลินทรีย์ในดิน","ป้องกันฝนตก","ทำให้ดินร้อนขึ้น"], correct:1 }
+    ]
+  },
+  {
+    key:"agri2", categoryKey:"agri", title:"ปุ๋ยหมักทำเองได้อย่างไร", color:"#5B8A3E",
+    passage:"ปุ๋ยหมักคือปุ๋ยอินทรีย์ที่เกิดจากการย่อยสลายเศษวัสดุธรรมชาติ เช่น เศษผัก ใบไม้แห้ง และมูลสัตว์ โดยอาศัยจุลินทรีย์เป็นตัวช่วยย่อยสลาย การทำปุ๋ยหมักที่ดีควรสลับชั้นระหว่างวัสดุสีเขียวที่มีไนโตรเจนสูงอย่างเศษผักผลไม้ กับวัสดุสีน้ำตาลที่มีคาร์บอนสูงอย่างใบไม้แห้งหรือฟาง เพื่อให้จุลินทรีย์ทำงานได้อย่างมีประสิทธิภาพ ควรรดน้ำให้กองปุ๋ยหมักชื้นพอประมาณอยู่เสมอแต่ไม่แฉะจนเกินไป และควรกลับกองปุ๋ยทุกสัปดาห์เพื่อเติมอากาศให้จุลินทรีย์ใช้ในการย่อยสลาย โดยทั่วไปปุ๋ยหมักที่สมบูรณ์จะใช้เวลาประมาณหนึ่งถึงสามเดือน สังเกตได้จากเนื้อปุ๋ยที่มีสีน้ำตาลเข้ม ร่วนซุย และมีกลิ่นคล้ายดินป่า",
+    questions:[
+      { q:"ปุ๋ยหมักเกิดจากอะไร", options:["สารเคมีสังเคราะห์","การย่อยสลายเศษวัสดุธรรมชาติโดยจุลินทรีย์","การเผาเศษไม้","การละลายแร่ธาตุ"], correct:1 },
+      { q:"วัสดุสีเขียวในการทำปุ๋ยหมักมีธาตุใดสูง", options:["ไนโตรเจน","โพแทสเซียม","ฟอสฟอรัส","แคลเซียม"], correct:0 },
+      { q:"เหตุใดจึงต้องกลับกองปุ๋ยหมักทุกสัปดาห์", options:["เพื่อให้ดูสวยงาม","เพื่อเติมอากาศให้จุลินทรีย์ใช้ย่อยสลาย","เพื่อไล่แมลง","เพื่อลดน้ำหนักกอง"], correct:1 },
+      { q:"ปุ๋ยหมักที่สมบูรณ์ใช้เวลาประมาณเท่าใด", options:["หนึ่งถึงสามวัน","หนึ่งถึงสามสัปดาห์","หนึ่งถึงสามเดือน","หนึ่งถึงสามปี"], correct:2 },
+      { q:"ปุ๋ยหมักที่สมบูรณ์มีลักษณะอย่างไร", options:["สีขาวและแข็ง","สีน้ำตาลเข้ม ร่วนซุย มีกลิ่นคล้ายดินป่า","มีกลิ่นฉุนแรง","เป็นน้ำเหลว"], correct:1 }
+    ]
+  },
+  {
+    key:"agri3", categoryKey:"agri", title:"การปลูกพืชหมุนเวียน", color:"#3F6E2E",
+    passage:"การปลูกพืชหมุนเวียนคือการสลับชนิดพืชที่ปลูกในพื้นที่เดียวกันในแต่ละฤดูกาล แทนที่จะปลูกพืชชนิดเดิมซ้ำ ๆ ต่อเนื่องกันหลายปี วิธีนี้ช่วยลดการสะสมของโรคและแมลงศัตรูพืชที่มักอาศัยอยู่เฉพาะกับพืชบางชนิด นอกจากนี้พืชแต่ละชนิดยังดึงธาตุอาหารจากดินในสัดส่วนที่แตกต่างกัน การปลูกพืชตระกูลถั่วสลับกับพืชชนิดอื่นยังช่วยเพิ่มไนโตรเจนกลับคืนสู่ดินได้ตามธรรมชาติ เนื่องจากรากของพืชตระกูลถั่วมีปมรากที่อาศัยแบคทีเรียตรึงไนโตรเจนจากอากาศ เกษตรกรที่ใช้วิธีปลูกพืชหมุนเวียนอย่างต่อเนื่องมักพบว่าดินมีความอุดมสมบูรณ์มากขึ้นในระยะยาว และลดการพึ่งพาปุ๋ยเคมีลงได้มาก",
+    questions:[
+      { q:"การปลูกพืชหมุนเวียนคืออะไร", options:["การปลูกพืชชนิดเดิมซ้ำทุกปี","การสลับชนิดพืชที่ปลูกในพื้นที่เดียวกันแต่ละฤดูกาล","การปลูกพืชกลางแจ้งตลอดปี","การปลูกพืชในโรงเรือนเท่านั้น"], correct:1 },
+      { q:"วิธีนี้ช่วยลดปัญหาใด", options:["ราคาผลผลิตตกต่ำ","การสะสมของโรคและแมลงศัตรูพืช","ปริมาณน้ำฝน","อุณหภูมิสูงเกินไป"], correct:1 },
+      { q:"พืชตระกูลใดช่วยเพิ่มไนโตรเจนกลับคืนสู่ดิน", options:["พืชตระกูลถั่ว","พืชตระกูลหญ้า","พืชตระกูลส้ม","พืชตระกูลกล้วย"], correct:0 },
+      { q:"รากของพืชตระกูลถั่วมีสิ่งใดที่ช่วยตรึงไนโตรเจน", options:["หนามแหลม","ปมรากที่อาศัยแบคทีเรียตรึงไนโตรเจนจากอากาศ","รากอากาศ","ใบเลี้ยงคู่"], correct:1 },
+      { q:"ผลระยะยาวของการปลูกพืชหมุนเวียนคืออะไร", options:["ดินเสื่อมโทรมเร็วขึ้น","ดินอุดมสมบูรณ์ขึ้นและลดการพึ่งพาปุ๋ยเคมี","ต้องใช้ปุ๋ยเคมีมากขึ้น","ผลผลิตลดลงทุกปี"], correct:1 }
+    ]
+  },
+  {
+    key:"agri4", categoryKey:"agri", title:"น้ำกับการเกษตรแบบยั่งยืน", color:"#6B8A2E",
+    passage:"น้ำเป็นปัจจัยสำคัญที่สุดอย่างหนึ่งในการเกษตร แต่การใช้น้ำอย่างสิ้นเปลืองกลับเป็นปัญหาที่พบได้บ่อยในแปลงเกษตรทั่วไป ระบบน้ำหยดหรือที่เรียกว่าไมโครสปริงเกลอร์เป็นเทคโนโลยีที่ช่วยส่งน้ำไปยังรากพืชโดยตรงในปริมาณที่พอเหมาะ ลดการสูญเสียน้ำจากการระเหยเมื่อเทียบกับการรดน้ำแบบสาดหรือปล่อยท่วมแปลง นอกจากนี้การคลุมดินด้วยฟางข้าวหรือเศษพืชแห้งยังช่วยรักษาความชื้นในดินให้อยู่ได้นานขึ้น ลดความถี่ในการรดน้ำลงได้มาก เกษตรกรที่วางแผนการให้น้ำอย่างเหมาะสมตามช่วงเวลาของวัน เช่น รดน้ำในช่วงเช้าตรู่หรือเย็นย่ำแทนกลางวันที่แดดจัด จะช่วยให้น้ำถูกดูดซึมเข้าสู่ดินได้เต็มที่ก่อนระเหยหายไป",
+    questions:[
+      { q:"เทคโนโลยีใดช่วยส่งน้ำไปยังรากพืชโดยตรง", options:["ระบบน้ำหยด (ไมโครสปริงเกลอร์)","การรดน้ำแบบสาด","การปล่อยท่วมแปลง","การฉีดพ่นทางใบเท่านั้น"], correct:0 },
+      { q:"การคลุมดินด้วยฟางข้าวช่วยเรื่องใด", options:["เพิ่มแสงแดด","รักษาความชื้นในดินให้อยู่ได้นานขึ้น","ทำให้ดินร้อนขึ้น","ไล่นกออกจากแปลง"], correct:1 },
+      { q:"เพราะเหตุใดจึงควรรดน้ำช่วงเช้าตรู่หรือเย็นย่ำ", options:["เพื่อประหยัดเวลา","น้ำถูกดูดซึมเข้าสู่ดินได้เต็มที่ก่อนระเหยหายไป","เพื่อให้พืชตื่นเช้า","เพื่อหลีกเลี่ยงแมลง"], correct:1 },
+      { q:"ปัญหาที่พบบ่อยในแปลงเกษตรทั่วไปเกี่ยวกับน้ำคืออะไร", options:["น้ำท่วมตลอดปี","การใช้น้ำอย่างสิ้นเปลือง","ไม่มีน้ำใช้เลย","น้ำมีราคาถูกเกินไป"], correct:1 },
+      { q:"ระบบน้ำหยดลดการสูญเสียน้ำจากสิ่งใดเมื่อเทียบกับการรดน้ำแบบสาด", options:["การระเหย","การกัดเซาะดิน","แมลงศัตรูพืช","แสงแดด"], correct:0 }
+    ]
+  },
+  {
+    key:"agri5", categoryKey:"agri", title:"แมลงศัตรูพืชและการป้องกันแบบธรรมชาติ", color:"#4A6B24",
+    passage:"แทนที่จะพึ่งพาสารเคมีกำจัดแมลงเพียงอย่างเดียว เกษตรกรจำนวนมากหันมาใช้วิธีป้องกันแมลงศัตรูพืชแบบธรรมชาติมากขึ้น หนึ่งในวิธีที่ได้ผลดีคือการปลูกพืชไล่แมลงแซมในแปลง เช่น ดาวเรืองหรือตะไคร้หอม ซึ่งมีกลิ่นที่แมลงศัตรูพืชหลายชนิดไม่ชอบ อีกวิธีหนึ่งคือการส่งเสริมให้มีแมลงตัวห้ำตัวเบียนในแปลง เช่น เต่าทองที่กินเพลี้ยเป็นอาหาร ช่วยควบคุมประชากรแมลงศัตรูพืชโดยไม่ต้องใช้สารเคมี การฉีดพ่นน้ำหมักสมุนไพร เช่น น้ำหมักสะเดาหรือพริกกับกระเทียม ก็เป็นอีกทางเลือกหนึ่งที่ช่วยไล่แมลงได้โดยไม่ทิ้งสารตกค้างที่เป็นอันตรายต่อผู้บริโภค วิธีเหล่านี้แม้จะให้ผลช้ากว่าสารเคมี แต่ปลอดภัยต่อทั้งเกษตรกรและสิ่งแวดล้อมในระยะยาว",
+    questions:[
+      { q:"พืชชนิดใดที่นิยมปลูกแซมเพื่อไล่แมลง", options:["ดาวเรืองหรือตะไคร้หอม","กุหลาบ","บัว","มะละกอ"], correct:0 },
+      { q:"แมลงตัวห้ำที่กล่าวถึงในเนื้อหาคือแมลงใด", options:["ผีเสื้อ","เต่าทอง","มด","ผึ้ง"], correct:1 },
+      { q:"เต่าทองช่วยควบคุมแมลงศัตรูพืชชนิดใด", options:["เพลี้ย","หนอนผีเสื้อ","ปลวก","ตั๊กแตน"], correct:0 },
+      { q:"น้ำหมักชนิดใดที่กล่าวถึงว่าช่วยไล่แมลงได้", options:["น้ำหมักสะเดาหรือพริกกับกระเทียม","น้ำหมักมะม่วง","น้ำหมักกล้วย","น้ำหมักมะพร้าว"], correct:0 },
+      { q:"ข้อดีของวิธีป้องกันแมลงแบบธรรมชาติตามเนื้อหาคืออะไร", options:["ให้ผลเร็วกว่าสารเคมี","ปลอดภัยต่อเกษตรกรและสิ่งแวดล้อมในระยะยาว","ราคาแพงกว่าสารเคมี","ใช้ได้เฉพาะพืชบางชนิด"], correct:1 }
+    ]
+  },
+  {
+    key:"sci1", categoryKey:"science", title:"ทำไมท้องฟ้าจึงเป็นสีฟ้า", color:"#2C5F8A",
+    passage:"แสงอาทิตย์ที่เรามองเห็นเป็นสีขาวนั้น แท้จริงแล้วประกอบด้วยแสงสีต่าง ๆ ผสมกันอยู่ ตั้งแต่สีม่วงไปจนถึงสีแดง เมื่อแสงอาทิตย์เดินทางผ่านชั้นบรรยากาศของโลก โมเลกุลของอากาศจะทำให้แสงกระเจิงไปทุกทิศทาง ปรากฏการณ์นี้เรียกว่าการกระเจิงแบบเรย์ลี แสงสีฟ้ามีความยาวคลื่นสั้นกว่าแสงสีแดงมาก จึงกระเจิงได้ง่ายกว่าและกระจายไปทั่วท้องฟ้ามากกว่าแสงสีอื่น เราจึงมองเห็นท้องฟ้าเป็นสีฟ้าในเวลากลางวัน ส่วนในช่วงเวลาพระอาทิตย์ขึ้นหรือตกดิน แสงต้องเดินทางผ่านชั้นบรรยากาศเป็นระยะทางที่ไกลกว่าปกติมาก แสงสีฟ้าจึงกระเจิงหายไปเกือบหมดก่อนถึงตา เหลือเพียงแสงสีแดงและสีส้มที่มีความยาวคลื่นยาวกว่าเดินทางมาถึงตาเรา ท้องฟ้าในยามเช้าและยามเย็นจึงมักปรากฏเป็นสีส้มแดงสวยงาม",
+    questions:[
+      { q:"ปรากฏการณ์ที่ทำให้ท้องฟ้าเป็นสีฟ้าเรียกว่าอะไร", options:["การหักเหของแสง","การกระเจิงแบบเรย์ลี","การสะท้อนของแสง","การเลี้ยวเบนของแสง"], correct:1 },
+      { q:"แสงสีใดมีความยาวคลื่นสั้นและกระเจิงได้ง่ายที่สุด", options:["แสงสีแดง","แสงสีฟ้า","แสงสีเหลือง","แสงสีส้ม"], correct:1 },
+      { q:"เหตุใดท้องฟ้ายามเช้าและเย็นจึงมักเป็นสีส้มแดง", options:["ดวงอาทิตย์เปลี่ยนสี","แสงต้องเดินทางผ่านชั้นบรรยากาศไกลกว่าปกติ แสงสีฟ้ากระเจิงหายไปก่อนถึงตา","มีเมฆมากกว่าปกติ","ชั้นโอโซนบางลง"], correct:1 },
+      { q:"แสงอาทิตย์สีขาวประกอบด้วยอะไร", options:["แสงสีฟ้าเพียงสีเดียว","แสงสีต่าง ๆ ผสมกันตั้งแต่สีม่วงถึงสีแดง","ความร้อนล้วน ๆ","รังสีเอกซ์"], correct:1 },
+      { q:"อะไรทำให้แสงกระเจิงไปทุกทิศทางในชั้นบรรยากาศ", options:["โมเลกุลของอากาศ","ฝุ่นละอองเท่านั้น","น้ำแข็งขั้วโลก","แรงโน้มถ่วง"], correct:0 }
+    ]
+  },
+  {
+    key:"sci2", categoryKey:"science", title:"วัฏจักรของน้ำ", color:"#3670A0",
+    passage:"น้ำบนโลกของเราหมุนเวียนอยู่ในระบบปิดที่เรียกว่าวัฏจักรของน้ำอย่างไม่หยุดนิ่ง เริ่มต้นจากพลังงานความร้อนของดวงอาทิตย์ทำให้น้ำจากทะเล แม่น้ำ และแหล่งน้ำต่าง ๆ ระเหยกลายเป็นไอน้ำลอยขึ้นสู่ชั้นบรรยากาศ เมื่อไอน้ำลอยสูงขึ้นไปเรื่อย ๆ จะเย็นตัวลงและควบแน่นกลายเป็นละอองน้ำเล็ก ๆ รวมตัวกันเป็นเมฆ เมื่อละอองน้ำในเมฆรวมตัวกันจนมีขนาดใหญ่และหนักเกินกว่าจะลอยอยู่ได้ ก็จะตกลงมาเป็นฝนหรือหิมะ น้ำฝนที่ตกลงสู่พื้นดินบางส่วนไหลลงสู่แม่น้ำและทะเลอีกครั้ง บางส่วนซึมลงใต้ดินกลายเป็นน้ำใต้ดิน และบางส่วนถูกพืชดูดซึมไปใช้แล้วคายกลับสู่อากาศอีกครั้งผ่านกระบวนการคายน้ำ วัฏจักรนี้ดำเนินไปอย่างต่อเนื่องและเป็นกลไกสำคัญที่ทำให้สิ่งมีชีวิตบนโลกมีน้ำใช้อย่างไม่ขาดแคลน",
+    questions:[
+      { q:"พลังงานใดเป็นตัวเริ่มต้นวัฏจักรของน้ำ", options:["พลังงานลม","พลังงานความร้อนจากดวงอาทิตย์","พลังงานไฟฟ้า","พลังงานนิวเคลียร์"], correct:1 },
+      { q:"ไอน้ำที่ลอยสูงขึ้นแล้วเย็นตัวลงจะกลายเป็นอะไร", options:["น้ำแข็งขั้วโลก","ละอองน้ำเล็ก ๆ รวมตัวกันเป็นเมฆ","น้ำใต้ดินทันที","หมอกควัน"], correct:1 },
+      { q:"เมฆจะตกลงมาเป็นฝนเมื่อใด", options:["เมื่อดวงอาทิตย์ตก","เมื่อละอองน้ำรวมตัวกันจนมีขนาดใหญ่และหนักเกินกว่าจะลอยอยู่ได้","เมื่อมีลมแรง","เมื่ออุณหภูมิสูงขึ้น"], correct:1 },
+      { q:"น้ำฝนที่ซึมลงใต้ดินจะกลายเป็นอะไร", options:["น้ำใต้ดิน","ไอน้ำทันที","น้ำแข็ง","หมอก"], correct:0 },
+      { q:"กระบวนการที่พืชคายน้ำกลับสู่อากาศเรียกว่าอะไร", options:["การสังเคราะห์แสง","กระบวนการคายน้ำ","การหายใจ","การควบแน่น"], correct:1 }
+    ]
+  },
+  {
+    key:"sci3", categoryKey:"science", title:"พลังงานจากดวงอาทิตย์", color:"#4A82B0",
+    passage:"ดวงอาทิตย์เป็นแหล่งพลังงานที่ยิ่งใหญ่ที่สุดของโลก และเป็นต้นกำเนิดของพลังงานเกือบทุกรูปแบบที่มนุษย์ใช้อยู่ในปัจจุบัน แผงเซลล์แสงอาทิตย์หรือโซลาร์เซลล์ทำงานโดยอาศัยวัสดุกึ่งตัวนำอย่างซิลิคอน เมื่อแสงอาทิตย์ตกกระทบลงบนแผง อิเล็กตรอนในวัสดุจะถูกกระตุ้นให้เคลื่อนที่และเกิดเป็นกระแสไฟฟ้า พลังงานแสงอาทิตย์จัดเป็นพลังงานสะอาดที่ไม่ปล่อยมลพิษระหว่างการผลิตไฟฟ้า ต่างจากการเผาไหม้เชื้อเพลิงฟอสซิล นอกจากนี้ยังเป็นพลังงานหมุนเวียนที่ไม่มีวันหมดตราบใดที่ดวงอาทิตย์ยังส่องแสง อย่างไรก็ตามการผลิตไฟฟ้าจากแสงอาทิตย์ยังมีข้อจำกัดตรงที่ผลิตได้เฉพาะในเวลากลางวันและขึ้นอยู่กับสภาพอากาศ นักวิทยาศาสตร์จึงพัฒนาระบบแบตเตอรี่กักเก็บพลังงานควบคู่ไปด้วยเพื่อให้สามารถใช้ไฟฟ้าจากแสงอาทิตย์ได้แม้ในเวลากลางคืน",
+    questions:[
+      { q:"แผงโซลาร์เซลล์ทำงานโดยอาศัยวัสดุใด", options:["ทองแดงล้วน","วัสดุกึ่งตัวนำอย่างซิลิคอน","พลาสติกใส","ยางธรรมชาติ"], correct:1 },
+      { q:"เมื่อแสงอาทิตย์ตกกระทบแผงโซลาร์เซลล์จะเกิดอะไรขึ้น", options:["แผงจะร้อนจนละลาย","อิเล็กตรอนถูกกระตุ้นให้เคลื่อนที่เกิดเป็นกระแสไฟฟ้า","แผงจะเปลี่ยนสี","เกิดเสียงดัง"], correct:1 },
+      { q:"เพราะเหตุใดพลังงานแสงอาทิตย์จึงถือเป็นพลังงานสะอาด", options:["มีราคาถูกที่สุด","ไม่ปล่อยมลพิษระหว่างการผลิตไฟฟ้า","ผลิตไฟฟ้าได้เร็วที่สุด","ไม่ต้องใช้อุปกรณ์ใด ๆ"], correct:1 },
+      { q:"ข้อจำกัดของพลังงานแสงอาทิตย์ตามเนื้อหาคืออะไร", options:["ใช้พื้นที่ติดตั้งน้อยเกินไป","ผลิตได้เฉพาะกลางวันและขึ้นอยู่กับสภาพอากาศ","มีราคาแพงกว่าน้ำมันมาก","ไม่สามารถผลิตไฟฟ้าได้เลย"], correct:1 },
+      { q:"นักวิทยาศาสตร์แก้ปัญหาข้อจำกัดนี้ด้วยวิธีใด", options:["สร้างดวงอาทิตย์เทียม","พัฒนาระบบแบตเตอรี่กักเก็บพลังงาน","เลิกใช้พลังงานแสงอาทิตย์","ลดจำนวนแผงโซลาร์เซลล์"], correct:1 }
+    ]
+  },
+  {
+    key:"sci4", categoryKey:"science", title:"เซลล์: หน่วยพื้นฐานของสิ่งมีชีวิต", color:"#295A82",
+    passage:"สิ่งมีชีวิตทุกชนิดบนโลก ไม่ว่าจะเป็นมนุษย์ สัตว์ พืช หรือแบคทีเรีย ล้วนประกอบขึ้นจากหน่วยพื้นฐานที่เรียกว่าเซลล์ทั้งสิ้น สิ่งมีชีวิตบางชนิดอย่างแบคทีเรียมีเพียงเซลล์เดียว ในขณะที่มนุษย์ประกอบด้วยเซลล์นับล้านล้านเซลล์ทำงานร่วมกัน ภายในเซลล์มีโครงสร้างเล็ก ๆ ที่เรียกว่าออร์แกเนลล์ ทำหน้าที่แตกต่างกันไป เช่น นิวเคลียสทำหน้าที่เก็บข้อมูลพันธุกรรมของสิ่งมีชีวิต ไมโทคอนเดรียทำหน้าที่ผลิตพลังงานให้เซลล์ใช้งาน เปรียบเสมือนโรงไฟฟ้าขนาดจิ๋วภายในเซลล์ นักวิทยาศาสตร์ค้นพบเซลล์เป็นครั้งแรกจากการส่องกล้องจุลทรรศน์ดูเนื้อไม้ก๊อกเมื่อหลายร้อยปีก่อน และตั้งแต่นั้นมาความรู้เรื่องเซลล์ก็กลายเป็นรากฐานสำคัญของวิชาชีววิทยาสมัยใหม่",
+    questions:[
+      { q:"หน่วยพื้นฐานของสิ่งมีชีวิตทุกชนิดคืออะไร", options:["อวัยวะ","เซลล์","เนื้อเยื่อ","โครโมโซม"], correct:1 },
+      { q:"สิ่งมีชีวิตชนิดใดที่มีเพียงเซลล์เดียว", options:["มนุษย์","แบคทีเรีย","สุนัข","ต้นไม้ใหญ่"], correct:1 },
+      { q:"ส่วนใดของเซลล์ทำหน้าที่เก็บข้อมูลพันธุกรรม", options:["นิวเคลียส","ไมโทคอนเดรีย","ผนังเซลล์","เยื่อหุ้มเซลล์"], correct:0 },
+      { q:"ไมโทคอนเดรียทำหน้าที่ใด", options:["เก็บข้อมูลพันธุกรรม","ผลิตพลังงานให้เซลล์ใช้งาน","สร้างผนังเซลล์","กำจัดของเสีย"], correct:1 },
+      { q:"นักวิทยาศาสตร์ค้นพบเซลล์ครั้งแรกจากการส่องดูสิ่งใด", options:["เนื้อไม้ก๊อก","หยดน้ำ","เส้นผม","ใบไม้สด"], correct:0 }
+    ]
+  },
+  {
+    key:"sci5", categoryKey:"science", title:"แรงโน้มถ่วงคืออะไร", color:"#1F4E70",
+    passage:"แรงโน้มถ่วงคือแรงดึงดูดที่มวลทุกชิ้นในเอกภพมีต่อกัน ยิ่งวัตถุมีมวลมากเท่าใด แรงโน้มถ่วงที่วัตถุนั้นกระทำต่อวัตถุอื่นก็จะยิ่งมากขึ้นเท่านั้น โลกของเรามีมวลมหาศาลจึงดึงดูดทุกสิ่งบนพื้นผิวให้อยู่ติดกับพื้นเสมอ ไอแซก นิวตัน เป็นผู้ที่อธิบายแนวคิดเรื่องแรงโน้มถ่วงไว้อย่างเป็นระบบเป็นครั้งแรก โดยกล่าวว่าแรงโน้มถ่วงมีอยู่ระหว่างวัตถุทุกคู่ ไม่ว่าจะเป็นแอปเปิลที่ตกจากต้น หรือดวงจันทร์ที่โคจรรอบโลก ล้วนอยู่ภายใต้แรงชนิดเดียวกันนี้ทั้งสิ้น นักบินอวกาศที่ล่องลอยอยู่ในสถานีอวกาศนานาชาติไม่ได้อยู่ในภาวะไร้แรงโน้มถ่วงอย่างที่หลายคนเข้าใจ แต่พวกเขาอยู่ในสภาวะตกอย่างอิสระร่วมกับยานตลอดเวลาขณะโคจรรอบโลก จึงรู้สึกเสมือนล่องลอยอยู่กลางอากาศ",
+    questions:[
+      { q:"แรงโน้มถ่วงคือแรงชนิดใด", options:["แรงผลัก","แรงดึงดูดที่มวลทุกชิ้นในเอกภพมีต่อกัน","แรงแม่เหล็ก","แรงเสียดทาน"], correct:1 },
+      { q:"ใครเป็นผู้อธิบายแนวคิดเรื่องแรงโน้มถ่วงอย่างเป็นระบบเป็นครั้งแรก", options:["อัลเบิร์ต ไอน์สไตน์","ไอแซก นิวตัน","กาลิเลโอ กาลิเลอี","ชาลส์ ดาร์วิน"], correct:1 },
+      { q:"ยิ่งวัตถุมีมวลมากขึ้น แรงโน้มถ่วงที่กระทำต่อวัตถุอื่นจะเป็นอย่างไร", options:["น้อยลง","มากขึ้นตามไปด้วย","ไม่เปลี่ยนแปลง","หายไปทันที"], correct:1 },
+      { q:"เหตุใดนักบินอวกาศในสถานีอวกาศจึงรู้สึกล่องลอย", options:["อยู่นอกเอกภพ","อยู่ในสภาวะตกอย่างอิสระร่วมกับยานขณะโคจรรอบโลก","ไม่มีมวลในอวกาศ","สวมชุดพิเศษต้านแรงโน้มถ่วง"], correct:1 },
+      { q:"ตัวอย่างที่กล่าวถึงว่าอยู่ภายใต้แรงโน้มถ่วงเดียวกันคือสิ่งใด", options:["แอปเปิลที่ตกจากต้นและดวงจันทร์ที่โคจรรอบโลก","ปลาในทะเลกับนกบนฟ้า","รถยนต์กับเครื่องบิน","หินกับเมฆ"], correct:0 }
+    ]
+  },
+  {
+    key:"hor1", categoryKey:"horror", title:"บ้านเก่าปลายทุ่ง", color:"#6B1E1E",
+    passage:"กลุ่มเพื่อนสี่คนตัดสินใจปั่นจักรยานไปสำรวจบ้านเก่าหลังหนึ่งที่ตั้งอยู่โดดเดี่ยวกลางทุ่งนา ซึ่งชาวบ้านเล่าลือกันว่าไม่มีใครอาศัยอยู่มานานกว่ายี่สิบปีแล้ว เมื่อไปถึงตอนพลบค่ำ พวกเขาสังเกตเห็นแสงไฟสลัว ๆ ลอดออกมาจากหน้าต่างชั้นบนราวกับมีคนจุดตะเกียงอยู่ข้างใน ทั้งที่บ้านหลังนี้ไม่มีไฟฟ้าใช้มานานแล้ว น้องเล็กสุดในกลุ่มชื่อพลอยยืนกรานว่าเห็นเงาคนเดินผ่านหน้าต่างไปมา แต่เมื่อทุกคนกล้าเดินเข้าไปใกล้ประตูบ้าน แสงไฟกลับดับวูบลงทันที เหลือเพียงความมืดสนิทและเสียงลมพัดใบไม้แห้งกรอบแกรบอยู่รอบตัว ทั้งสี่คนตัดสินใจปั่นจักรยานกลับบ้านโดยไม่มีใครพูดอะไรตลอดทาง",
+    questions:[
+      { q:"เพื่อนสี่คนไปสำรวจสถานที่ใด", options:["โรงเรียนร้าง","บ้านเก่ากลางทุ่งนา","วัดเก่า","สุสาน"], correct:1 },
+      { q:"บ้านหลังนี้ไม่มีใครอาศัยอยู่มานานเท่าใด", options:["สิบปี","กว่ายี่สิบปี","ห้าปี","สามสิบห้าปี"], correct:1 },
+      { q:"พวกเขาสังเกตเห็นอะไรที่หน้าต่างชั้นบน", options:["ผ้าม่านสีขาว","แสงไฟสลัว ๆ","ควันไฟ","นกบิน"], correct:1 },
+      { q:"ใครในกลุ่มยืนกรานว่าเห็นเงาคนเดินผ่านหน้าต่าง", options:["พลอย","ต้น","แพร","สมชาย"], correct:0 },
+      { q:"เกิดอะไรขึ้นเมื่อทุกคนเดินเข้าไปใกล้ประตูบ้าน", options:["ประตูเปิดเอง","แสงไฟดับวูบลงทันที","มีเสียงดนตรีดังขึ้น","ฝนเริ่มตก"], correct:1 }
+    ]
+  },
+  {
+    key:"hor2", categoryKey:"horror", title:"เสียงเรียกจากในป่า", color:"#5A1717",
+    passage:"สมชายเป็นคนตัดฟืนที่เข้าไปหาฟืนในป่าลึกเป็นประจำทุกเช้า วันหนึ่งขณะกำลังตัดกิ่งไม้อยู่ เขาได้ยินเสียงคล้ายใครบางคนเรียกชื่อเขาแว่วมาจากพุ่มไม้ทึบด้านหลัง เสียงนั้นฟังดูคล้ายเสียงของภรรยาเขาเองราวกับอยู่ห่างออกไปไม่กี่ก้าว แต่สมชายจำคำสอนของปู่ได้ขึ้นใจว่าห้ามหันไปตอบเสียงเรียกที่ไม่แน่ใจว่าเป็นใครในป่าลึกเด็ดขาด เพราะบางครั้งอาจไม่ใช่คนจริง ๆ ที่เรียก เขาจึงตั้งสติเดินหน้าตรงกลับไปยังทางที่มาโดยไม่หันหลังกลับแม้แต่ครั้งเดียว เสียงเรียกนั้นดังตามหลังมาเรื่อย ๆ จนกระทั่งเขาเดินพ้นแนวป่าออกมาถึงทุ่งโล่ง เสียงเรียกจึงเงียบหายไปในทันที เมื่อกลับถึงบ้านสมชายถามภรรยาว่าเช้านี้เข้าป่าไปเรียกเขาหรือไม่ ภรรยาตอบว่าอยู่บ้านทำกับข้าวมาตลอดทั้งเช้าไม่ได้ออกไปไหนเลย",
+    questions:[
+      { q:"สมชายมีอาชีพอะไร", options:["ชาวประมง","คนตัดฟืน","ครู","พ่อค้า"], correct:1 },
+      { q:"เสียงที่เรียกชื่อสมชายฟังดูคล้ายเสียงของใคร", options:["เพื่อนบ้าน","ภรรยาของเขา","ปู่ของเขา","ลูกชายของเขา"], correct:1 },
+      { q:"ปู่เคยสอนสมชายไว้อย่างไรเกี่ยวกับเสียงเรียกในป่า", options:["ให้ตอบกลับทันที","ห้ามหันไปตอบเสียงเรียกที่ไม่แน่ใจว่าเป็นใคร","ให้วิ่งหนีทันที","ให้ตะโกนขู่กลับ"], correct:1 },
+      { q:"เสียงเรียกหายไปเมื่อใด", options:["เมื่อฟ้าสว่าง","เมื่อสมชายเดินพ้นแนวป่าออกมาถึงทุ่งโล่ง","เมื่อสมชายตะโกนตอบ","เมื่อฝนเริ่มตก"], correct:1 },
+      { q:"ภรรยาของสมชายตอบว่าอย่างไรเมื่อถูกถาม", options:["ไปตลาดมาทั้งเช้า","อยู่บ้านทำกับข้าวมาตลอดทั้งเช้า ไม่ได้ออกไปไหนเลย","ไปเรียกเขาจริง ๆ","จำไม่ได้ว่าทำอะไรอยู่"], correct:1 }
+    ]
+  },
+  {
+    key:"hor3", categoryKey:"horror", title:"ตุ๊กตาที่ไม่มีใครกล้าแตะ", color:"#7A2424",
+    passage:"ในร้านขายของเก่าเล็ก ๆ ริมถนนสายหนึ่ง มีตุ๊กตาผ้าเก่าตัวหนึ่งวางอยู่บนชั้นสูงสุดมานานหลายปีโดยไม่มีใครซื้อไป เจ้าของร้านชื่อลุงหวานเล่าให้ลูกค้าฟังเสมอว่าเขาไม่กล้าย้ายตุ๊กตาตัวนี้ไปไว้ที่อื่นเลย เพราะทุกครั้งที่ลองย้าย เช้าวันรุ่งขึ้นตุ๊กตาจะกลับมาอยู่ที่ชั้นเดิมโดยไม่มีใครทราบสาเหตุ วันหนึ่งเด็กหญิงคนหนึ่งมากับแม่ที่ร้าน เธอมองตุ๊กตาตัวนั้นแล้วบอกกับแม่ว่าตุ๊กตากำลังยิ้มให้เธออยู่ แม่ของเด็กหญิงมองไปที่ตุ๊กตาแล้วเห็นเพียงใบหน้าผ้าเก่า ๆ ที่ปักด้วยด้ายสีดำเป็นรอยยิ้มแบบเดิมที่ไม่เคยเปลี่ยนแปลง ลุงหวานเพียงยิ้มแล้วพูดเบา ๆ ว่าตุ๊กตาตัวนี้คงกำลังรอใครสักคนที่มันจำได้",
+    questions:[
+      { q:"ตุ๊กตาผ้าเก่าวางอยู่ที่ใดในร้าน", options:["ในลิ้นชักเก็บของ","ชั้นสูงสุด","หลังเคาน์เตอร์","ในตู้กระจก"], correct:1 },
+      { q:"เจ้าของร้านชื่ออะไร", options:["ลุงหวาน","ลุงเคียม","ป้ามาลี","ลุงบุญ"], correct:0 },
+      { q:"เกิดอะไรขึ้นทุกครั้งที่ลุงหวานลองย้ายตุ๊กตา", options:["ตุ๊กตาหายไปเลย","เช้าวันรุ่งขึ้นตุ๊กตาจะกลับมาอยู่ที่ชั้นเดิม","ตุ๊กตาเปลี่ยนสี","มีลูกค้ามาซื้อทันที"], correct:1 },
+      { q:"เด็กหญิงบอกแม่ว่าตุ๊กตากำลังทำอะไร", options:["ร้องไห้","ยิ้มให้เธออยู่","หลับตา","พูดกับเธอ"], correct:1 },
+      { q:"ลุงหวานพูดว่าตุ๊กตาตัวนี้กำลังทำอะไร", options:["รอใครสักคนที่มันจำได้","อยากถูกซ่อมแซม","อยากถูกทิ้ง","อยากกลับบ้านเก่า"], correct:0 }
+    ]
+  },
+  {
+    key:"hor4", categoryKey:"horror", title:"รถไฟขบวนสุดท้ายเที่ยงคืน", color:"#4A1414",
+    passage:"สถานีรถไฟเล็ก ๆ แห่งหนึ่งในต่างจังหวัดมีเรื่องเล่าติดปากคนแถวนั้นมานานว่า ทุกคืนวันเพ็ญจะมีรถไฟขบวนหนึ่งแล่นผ่านสถานีในเวลาเที่ยงคืนตรง ทั้งที่ตารางเดินรถจริงไม่มีขบวนใดวิ่งผ่านในเวลานั้นเลย นายสถานีคนใหม่ชื่อประเสริฐไม่เชื่อเรื่องเล่าดังกล่าว จนกระทั่งคืนหนึ่งเขาเห็นแสงไฟหัวรถจักรส่องเข้ามาไกล ๆ พร้อมเสียงหวูดรถไฟดังก้องไปทั่วสถานี เขารีบวิ่งออกไปดูที่ชานชาลาแต่กลับไม่พบรถไฟขบวนใดจอดอยู่เลย มีเพียงความเงียบและหมอกบาง ๆ ลอยอยู่เหนือรางรถไฟ เช้าวันรุ่งขึ้นประเสริฐลองถามคนงานรุ่นเก่าในสถานี ได้ความว่าเมื่อหลายสิบปีก่อนเคยเกิดอุบัติเหตุรถไฟตกรางที่จุดนี้ในคืนวันเพ็ญเช่นกัน",
+    questions:[
+      { q:"เรื่องเล่าเกี่ยวกับรถไฟขบวนพิเศษเกิดขึ้นในคืนแบบใด", options:["คืนวันเพ็ญ เวลาเที่ยงคืนตรง","คืนฝนตก","คืนวันเสาร์","คืนที่มีพายุ"], correct:0 },
+      { q:"นายสถานีคนใหม่ชื่ออะไร", options:["สมชาย","ประเสริฐ","วิชัย","บุญเรือง"], correct:1 },
+      { q:"ประเสริฐเห็นและได้ยินอะไรในคืนนั้น", options:["เสียงเพลงและแสงสี","แสงไฟหัวรถจักรและเสียงหวูดรถไฟ","เสียงคนร้องไห้","แสงฟ้าแลบ"], correct:1 },
+      { q:"เมื่อวิ่งไปดูที่ชานชาลา ประเสริฐพบอะไร", options:["รถไฟจอดรออยู่","ไม่พบรถไฟขบวนใด มีเพียงความเงียบและหมอกบาง ๆ","มีผู้โดยสารยืนรอ","พบเจ้าหน้าที่ตรวจตั๋ว"], correct:1 },
+      { q:"คนงานรุ่นเก่าเล่าว่าเคยเกิดเหตุการณ์ใดที่จุดนี้", options:["น้ำท่วมสถานี","อุบัติเหตุรถไฟตกรางในคืนวันเพ็ญเมื่อหลายสิบปีก่อน","ไฟไหม้สถานี","การก่อสร้างสถานีใหม่"], correct:1 }
+    ]
+  },
+  {
+    key:"hor5", categoryKey:"horror", title:"กระจกบานเก่าในห้องใต้หลังคา", color:"#611A1A",
+    passage:"เมื่อครอบครัวของนัทย้ายเข้าไปอยู่บ้านหลังใหม่ที่ซื้อต่อจากเจ้าของเดิม เขาพบกระจกบานใหญ่วางพิงผนังอยู่ในห้องใต้หลังคาซึ่งไม่มีใครใช้งาน กระจกบานนั้นเก่ามากจนขอบไม้เริ่มผุ แต่เนื้อกระจกยังคงใสสะอาดผิดปกติ คืนแรกที่นัทลองส่องกระจกบานนี้ก่อนนอน เขารู้สึกเหมือนเห็นเงาใครบางคนยืนอยู่ด้านหลังตัวเองแวบหนึ่งก่อนจะหายไป เขาคิดว่าตัวเองคงตาลายเพราะง่วงนอน แต่พอลองส่องดูอีกหลายคืนถัดมาก็ยังเห็นเงาเดิมเป็นครั้งคราว นัทจึงลองถามเพื่อนบ้านที่อยู่มานาน ได้ความว่าเจ้าของบ้านคนก่อนเคยมีคุณยายที่ชอบนั่งแต่งตัวหน้ากระจกบานนี้ทุกเย็นก่อนจะเสียชีวิตในบ้านหลังนี้เมื่อหลายปีก่อน",
+    questions:[
+      { q:"นัทพบกระจกบานใหญ่อยู่ที่ใดในบ้านใหม่", options:["ห้องนั่งเล่น","ห้องใต้หลังคา","ห้องครัว","โรงรถ"], correct:1 },
+      { q:"กระจกบานนี้มีลักษณะอย่างไร", options:["แตกร้าวทั้งบาน","ขอบไม้ผุแต่เนื้อกระจกยังใสสะอาดผิดปกติ","มีฝุ่นหนาจนมองไม่เห็นอะไร","เป็นกระจกสีชา"], correct:1 },
+      { q:"นัทรู้สึกเห็นอะไรตอนส่องกระจกคืนแรก", options:["แสงสีแดง","เงาใครบางคนยืนอยู่ด้านหลังตัวเองแวบหนึ่ง","ควันสีขาว","ตัวหนังสือปรากฏขึ้น"], correct:1 },
+      { q:"นัทไปถามข้อมูลเพิ่มเติมจากใคร", options:["เพื่อนบ้านที่อยู่มานาน","พระที่วัด","ตำรวจ","นักข่าว"], correct:0 },
+      { q:"เจ้าของบ้านคนก่อนมีใครที่ชอบนั่งหน้ากระจกบานนี้", options:["ลูกสาว","คุณยาย","คนรับใช้","หลานชาย"], correct:1 }
+    ]
+  },
+  {
+    key:"novel_series1", categoryKey:"novel", title:"เงาจันทร์ที่ปลายฟ้า (นวนิยายรายตอน)", color:"#5A2A4C",
+    /* หนังสือเล่มยาวที่แบ่งเป็นหลายตอน: ใช้ array "chapters" แทนการใส่ passage/questions
+       เดี่ยว ๆ แบบหนังสือทั่วไปด้านบน แต่ละตอนมี title, passage, questions (5 ข้อ) ของตัวเอง
+       และผู้อ่านจะได้ 10 แต้มทุกครั้งที่ผ่านแบบทดสอบท้ายตอนนั้น ๆ (เหมือนแต้มต่อเล่มปกติ)
+       เพิ่มตอนใหม่ได้ไม่จำกัดจำนวน (เช่น 10 กว่าตอน) โดย copy รูปแบบ object ด้านล่างต่อท้าย
+       array นี้ได้เลย ไม่ต้องแก้โค้ดส่วนอื่น */
+    chapters:[
+      {
+        title:"จดหมายลึกลับ",
+        passage:"เก้าอายุสิบสามปี อาศัยอยู่กับยายในบ้านไม้เก่าริมคลอง เช้าวันหนึ่งเขาพบซองจดหมายสีเหลืองซีดวางอยู่ใต้ประตูบ้านโดยไม่มีชื่อผู้ส่ง ภายในมีเพียงกระดาษแผ่นเดียวเขียนว่า 'ถ้าอยากรู้ความจริงเรื่องพ่อของเธอ ให้ไปที่ท่าน้ำเก่าตอนพระอาทิตย์ตก' เก้าไม่เคยรู้จักพ่อของตัวเองเลยเพราะยายไม่เคยเล่าให้ฟัง เขาลังเลอยู่นานก่อนตัดสินใจซ่อนจดหมายไว้ใต้หมอนและวางแผนจะไปที่ท่าน้ำตามที่ระบุไว้ในเย็นวันนั้น",
+        questions:[
+          { q:"เก้าอาศัยอยู่กับใคร", options:["พ่อแม่","ยาย","ลุง","ป้า"], correct:1 },
+          { q:"เก้าพบอะไรอยู่ใต้ประตูบ้าน", options:["กล่องพัสดุ","ซองจดหมายสีเหลืองซีด","หนังสือเก่า","กุญแจ"], correct:1 },
+          { q:"จดหมายบอกให้เก้าไปที่ใด", options:["ท่าน้ำเก่า","สถานีรถไฟ","วัด","ตลาด"], correct:0 },
+          { q:"จดหมายนัดให้ไปในช่วงเวลาใด", options:["ตอนเช้าตรู่","ตอนเที่ยง","ตอนพระอาทิตย์ตก","ตอนเที่ยงคืน"], correct:2 },
+          { q:"เก้าซ่อนจดหมายไว้ที่ใด", options:["ใต้หมอน","ในกระเป๋าเสื้อ","ใต้ต้นไม้","ในลิ้นชักโต๊ะ"], correct:0 }
+        ]
+      },
+      {
+        title:"ท่าน้ำยามเย็น",
+        passage:"เมื่อถึงเวลาเย็น เก้าปั่นจักรยานไปยังท่าน้ำเก่าตามที่จดหมายบอกไว้ เขาพบชายชราคนหนึ่งนั่งอยู่บนม้านั่งไม้ผุ ๆ มองออกไปที่สายน้ำอย่างเงียบ ๆ ชายคนนั้นแนะนำตัวว่าชื่อลุงเสน่ห์ เคยเป็นเพื่อนสนิทของพ่อเก้าเมื่อหลายปีก่อน ลุงเสน่ห์เล่าว่าพ่อของเก้าเคยเป็นชาวประมงที่กล้าหาญและออกเรือไปช่วยเหลือผู้ประสบภัยกลางพายุ แต่ไม่มีใครเห็นเรือของเขากลับเข้าฝั่งอีกเลยนับแต่นั้น เก้าฟังแล้วรู้สึกทั้งตื่นเต้นและเศร้าในเวลาเดียวกัน จึงถามลุงเสน่ห์ว่าทำไมยายไม่เคยเล่าเรื่องนี้ให้ฟังเลย",
+        questions:[
+          { q:"เก้าพบใครที่ท่าน้ำเก่า", options:["ตำรวจ","ชายชราชื่อลุงเสน่ห์","เพื่อนร่วมชั้น","พระสงฆ์"], correct:1 },
+          { q:"ลุงเสน่ห์เป็นใครของพ่อเก้า", options:["ญาติทางยาย","เพื่อนสนิท","นายจ้างเก่า","ครูประจำชั้น"], correct:1 },
+          { q:"พ่อของเก้าเคยมีอาชีพอะไร", options:["ชาวนา","ชาวประมง","ครู","พ่อค้า"], correct:1 },
+          { q:"เกิดเหตุการณ์ใดขึ้นกับพ่อของเก้า", options:["ย้ายไปทำงานต่างจังหวัด","ออกเรือช่วยผู้ประสบภัยแล้วไม่กลับเข้าฝั่ง","เกษียณอายุแล้วพักผ่อนที่บ้าน","ป่วยหนักจนเสียชีวิตที่โรงพยาบาล"], correct:1 },
+          { q:"เก้ารู้สึกอย่างไรหลังฟังเรื่องราวของพ่อ", options:["เฉยเมยไม่สนใจ","โกรธลุงเสน่ห์","ทั้งตื่นเต้นและเศร้าในเวลาเดียวกัน","กลัวจนร้องไห้"], correct:2 }
+        ]
+      },
+      {
+        title:"ความจริงที่ซ่อนไว้",
+        passage:"ลุงเสน่ห์อธิบายว่ายายของเก้าเสียใจมากจนไม่กล้าพูดถึงพ่อของเขาอีกเลยนับแต่วันที่เรือหายไป เพราะกลัวว่าเก้าจะเสียใจตามไปด้วย ลุงเสน่ห์หยิบกล่องไม้เล็ก ๆ ออกมาจากย่ามที่พกติดตัว ข้างในมีเข็มทิศเก่าและรูปถ่ายของพ่อเก้าตอนหนุ่ม ลุงบอกว่าพ่อของเก้าฝากของชิ้นนี้ไว้ก่อนออกเรือเที่ยวสุดท้ายและสั่งไว้ว่าถ้าลูกชายโตพอจะเข้าใจ ให้นำมามอบให้ เก้ารับกล่องไม้มาด้วยมือที่สั่นเทา รู้สึกเหมือนได้พบพ่อที่ไม่เคยรู้จักเป็นครั้งแรกผ่านของชิ้นนี้ เขาตั้งใจว่าจะกลับไปเล่าเรื่องทั้งหมดให้ยายฟังอย่างอ่อนโยน",
+        questions:[
+          { q:"เหตุใดยายจึงไม่เคยเล่าเรื่องพ่อให้เก้าฟัง", options:["ลืมไปแล้ว","เสียใจมากจนไม่กล้าพูดถึง","ยายไม่เคยรู้จักพ่อ","ยายโกรธพ่อของเก้า"], correct:1 },
+          { q:"ลุงเสน่ห์หยิบอะไรออกมาจากย่าม", options:["จดหมายอีกฉบับ","กล่องไม้เล็ก ๆ","แผนที่เก่า","เงินสด"], correct:1 },
+          { q:"ในกล่องไม้มีอะไรอยู่บ้าง", options:["เข็มทิศเก่าและรูปถ่ายของพ่อ","เครื่องประดับ","จดหมายรัก","เหรียญโบราณ"], correct:0 },
+          { q:"พ่อของเก้าฝากกล่องนี้ไว้เมื่อใด", options:["ตอนเก้าเกิด","ก่อนออกเรือเที่ยวสุดท้าย","ตอนแต่งงานกับแม่","หลังกลับจากต่างประเทศ"], correct:1 },
+          { q:"เก้าตั้งใจจะทำอะไรหลังได้รับกล่องไม้", options:["เก็บเป็นความลับตลอดไป","กลับไปเล่าเรื่องทั้งหมดให้ยายฟัง","นำไปขายต่อ","โยนทิ้งเพราะเสียใจ"], correct:1 }
+        ]
+      }
+    ]
+  },
+  {
+    key:"novel_series2", categoryKey:"novel", title:"ประภาคารปลายทะเล (นวนิยายรายตอน)", color:"#502A4A",
+    chapters:[
+      {
+        title:"จดหมายจากปู่ที่ไม่เคยพบ",
+        passage:"หมิวอายุยี่สิบสองปี ไม่เคยพบหน้าปู่ของตัวเองเลยแม้แต่ครั้งเดียว เพราะพ่อกับปู่ตัดขาดกันตั้งแต่ก่อนเธอเกิด จนกระทั่งเช้าวันหนึ่งจดหมายจากทนายความก็มาถึงบ้าน แจ้งว่าปู่เสียชีวิตแล้ว และได้ยกประภาคารเก่าแก่ริมทะเลให้เป็นมรดกแก่เธอเพียงคนเดียว หมิวลังเลอยู่นาน ก่อนตัดสินใจเดินทางไปดูสถานที่แห่งนั้นด้วยตัวเอง เมื่อไปถึง เธอพบกุญแจเก่าสนิมเกาะห้อยอยู่ที่ประตู และสมุดบันทึกเล่มหนาวางอยู่บนโต๊ะราวกับมีคนเพิ่งวางไว้ไม่นาน เธอเปิดหน้าแรกด้วยความอยากรู้ ตัวหนังสือลายมือปู่เขียนไว้เพียงบรรทัดเดียวว่า 'อย่าจุดไฟในคืนที่พระจันทร์เต็มดวงเด็ดขาด ไม่ว่าจะเกิดอะไรขึ้นก็ตาม'",
+        questions:[
+          { q:"หมิวได้รับมรดกอะไรจากปู่", options:["บ้านไม้ริมคลอง","ประภาคารเก่าแก่ริมทะเล","เรือประมงลำเก่า","ร้านหนังสือเก่า"], correct:1 },
+          { q:"เหตุใดหมิวไม่เคยพบปู่มาก่อนเลย", options:["ปู่อาศัยอยู่ต่างประเทศ","พ่อกับปู่ตัดขาดกันตั้งแต่ก่อนเธอเกิด","ปู่เสียชีวิตตั้งแต่หมิวยังเด็ก","ปู่ไม่ชอบเด็ก"], correct:1 },
+          { q:"หมิวพบอะไรอยู่บนโต๊ะในประภาคาร", options:["แผนที่เก่า","สมุดบันทึกเล่มหนา","กล่องดนตรี","เข็มทิศ"], correct:1 },
+          { q:"ข้อความในสมุดบันทึกหน้าแรกเขียนว่าอย่างไร", options:["จงดูแลประภาคารให้ดี","อย่าจุดไฟในคืนที่พระจันทร์เต็มดวงเด็ดขาด","ห้ามเข้าห้องใต้ดิน","อย่าไว้ใจชาวประมง"], correct:1 },
+          { q:"ใครเป็นผู้แจ้งข่าวการเสียชีวิตของปู่แก่หมิว", options:["ญาติในหมู่บ้าน","ทนายความ","ตำรวจ","เพื่อนบ้าน"], correct:1 }
+        ]
+      },
+      {
+        title:"ความลับใต้แสงจันทร์",
+        passage:"หมิวถามชาวประมงในหมู่บ้านเกี่ยวกับปู่ ได้ความว่าปู่เป็นคนเก็บตัวมาก ไม่ค่อยพูดกับใคร และดูแลประภาคารมาตลอดสี่สิบกว่าปีโดยไม่เคยขาดแม้แต่คืนเดียว ลุงประมงคนหนึ่งเล่าเสียงเบาว่า เมื่อหลายสิบปีก่อนเคยมีเรือประมงลำหนึ่งหายไปในทะเลกลางคืนพระจันทร์เต็มดวง ไม่มีใครพบซากเรือหรือลูกเรืออีกเลย นับแต่นั้นปู่ก็เปลี่ยนไปอย่างสิ้นเชิง หมิวฟังแล้วรู้สึกขนลุก คืนนั้นเธอตัดสินใจพักค้างที่ประภาคารเป็นคืนแรก โดยไม่รู้เลยว่าคืนนี้คือคืนพระจันทร์เต็มดวงพอดี กลางดึก ไฟในโคมประภาคารที่เพิ่งจุดไว้ก่อนนอนกลับดับวูบลงเองโดยไม่มีสาเหตุ",
+        questions:[
+          { q:"ปู่ดูแลประภาคารมานานเท่าใด", options:["สิบปี","ยี่สิบกว่าปี","สี่สิบกว่าปี","ห้าปี"], correct:2 },
+          { q:"เกิดเหตุการณ์ใดในทะเลเมื่อหลายสิบปีก่อน", options:["เกิดพายุใหญ่ทำลายหมู่บ้าน","เรือประมงลำหนึ่งหายไปในคืนพระจันทร์เต็มดวง","ประภาคารถูกไฟไหม้","มีปลาวาฬเกยตื้น"], correct:1 },
+          { q:"หมิวตัดสินใจทำอะไรในคืนแรกที่มาถึงประภาคาร", options:["กลับบ้านทันที","พักค้างคืนที่ประภาคาร","ไปนอนที่หมู่บ้านชาวประมง","เฝ้าดูทะเลทั้งคืน"], correct:1 },
+          { q:"คืนที่หมิวพักค้างตรงกับคืนแบบใดพอดี", options:["คืนฝนตกหนัก","คืนพระจันทร์เต็มดวง","คืนที่ไม่มีดาว","คืนวันเกิดของเธอ"], correct:1 },
+          { q:"เกิดอะไรขึ้นกับไฟในโคมประภาคารกลางดึก", options:["ลุกโชนสว่างขึ้นกว่าเดิม","ดับวูบลงเองโดยไม่มีสาเหตุ","เปลี่ยนเป็นสีแดง","กะพริบถี่ ๆ ตลอดคืน"], correct:1 }
+        ]
+      },
+      {
+        title:"ประตูที่เปิดเอง",
+        passage:"หมิวรีบวิ่งขึ้นบันไดวนไปยังห้องโคมไฟ พบว่ากลไกหมุนของโคมไฟเสียจนไม่สามารถจุดไฟต่อได้ เธอพยายามซ่อมด้วยความรู้เท่าที่มี แต่ก็ยังไม่สำเร็จ ขณะที่นั่งคิดหาทางอยู่นั้น เธอได้ยินเสียงเคาะแผ่วเบาดังมาจากชั้นล่าง เมื่อลงไปดูกลับพบว่าประตูห้องใต้ดินที่เคยล็อกแน่นหนามาตลอดกลับเปิดอ้าออกเล็กน้อย มีแสงสลัว ๆ ลอดออกมาจากภายใน หมิวยืนนิ่งอยู่ครู่หนึ่งด้วยความกลัวปนอยากรู้ เธอค่อย ๆ ผลักประตูให้เปิดกว้างขึ้น และในความมืดสลัวนั้น เธอเห็นเงาร่างคนคนหนึ่งเคลื่อนไหวอยู่ลึกเข้าไปในห้อง",
+        questions:[
+          { q:"หมิววิ่งขึ้นไปที่ห้องใดเป็นอันดับแรก", options:["ห้องนอนปู่","ห้องโคมไฟ","ห้องครัว","ห้องเก็บของ"], correct:1 },
+          { q:"ปัญหาของโคมไฟในตอนนี้คืออะไร", options:["ไฟฟ้าดับทั้งเกาะ","กลไกหมุนเสียจนจุดไฟต่อไม่ได้","กระจกโคมแตก","น้ำมันหมด"], correct:1 },
+          { q:"เสียงเคาะแผ่วเบาดังมาจากที่ใด", options:["หน้าต่างชั้นบน","ชั้นล่าง","ห้องนอนของหมิว","นอกประภาคาร"], correct:1 },
+          { q:"ประตูห้องใดเปิดอ้าออกเองทั้งที่เคยล็อกแน่นหนา", options:["ประตูห้องครัว","ประตูห้องใต้ดิน","ประตูหน้าบ้าน","ประตูห้องโคมไฟ"], correct:1 },
+          { q:"หมิวเห็นอะไรอยู่ลึกเข้าไปในห้องใต้ดิน", options:["แสงไฟกะพริบ","เงาร่างคนคนหนึ่งเคลื่อนไหวอยู่","กล่องสมบัติ","แมวดำตัวหนึ่ง"], correct:1 }
+        ]
+      },
+      {
+        title:"ภาพวาดหญิงสาวปริศนา",
+        passage:"หมิวรวบรวมความกล้าเดินเข้าไปในห้องใต้ดิน เมื่อสายตาปรับชินกับความมืด เธอพบว่าห้องนี้เต็มไปด้วยข้าวของเก่าแก่จากเรือโบราณ เสากระโดง เชือกผูกเรือ และหีบไม้หลายใบ บนผนังมีภาพวาดสีน้ำมันของหญิงสาวคนหนึ่งแขวนอยู่ ใบหน้าในภาพช่างละม้ายคล้ายเธอมากจนขนลุก หมิวเปิดหีบไม้ใบหนึ่งพบจดหมายเก่าหลายฉบับที่ยังไม่เคยถูกส่งออกไป ด้านบนซองเขียนไว้เพียงคำว่า 'ถึงลูกสาวของฉัน' หมิวยืนนิ่งไปครู่หนึ่ง เพราะเธอไม่เคยรู้มาก่อนเลยว่าพ่อของเธอมีพี่น้องคนอื่นอีก หรือว่าจดหมายเหล่านี้เขียนถึงใครกันแน่",
+        questions:[
+          { q:"ห้องใต้ดินเต็มไปด้วยข้าวของแบบใด", options:["เสื้อผ้าเก่า","ข้าวของเก่าแก่จากเรือโบราณ","หนังสือเรียนเก่า","เครื่องครัวโบราณ"], correct:1 },
+          { q:"ภาพวาดบนผนังเป็นภาพของใคร", options:["ปู่ในวัยหนุ่ม","หญิงสาวที่หน้าคล้ายหมิวมาก","ชาวประมงเฒ่า","เด็กชายคนหนึ่ง"], correct:1 },
+          { q:"หมิวพบอะไรอยู่ในหีบไม้", options:["เหรียญทองเก่า","จดหมายเก่าหลายฉบับที่ยังไม่เคยถูกส่ง","แผนที่สมบัติ","เครื่องประดับ"], correct:1 },
+          { q:"ด้านบนซองจดหมายเขียนว่าอย่างไร", options:["ถึงเพื่อนรัก","ถึงลูกสาวของฉัน","ห้ามเปิดอ่าน","ความลับของครอบครัว"], correct:1 },
+          { q:"หมิวรู้สึกสงสัยเรื่องใดหลังพบจดหมาย", options:["ว่าปู่เคยเป็นโจรสลัด","ว่าพ่อมีพี่น้องคนอื่นหรือจดหมายเขียนถึงใครกันแน่","ว่าประภาคารมีผีสิง","ว่าหญิงในภาพยังมีชีวิตอยู่"], correct:1 }
+        ]
+      },
+      {
+        title:"เรื่องเล่าจากลุงแก้ว",
+        passage:"หมิวนำภาพวาดไปให้ลุงแก้ว ชาวประมงเฒ่าที่รู้จักปู่มาตั้งแต่หนุ่ม ๆ ดู ลุงแก้วมองภาพนั้นแล้วถอนหายใจยาวก่อนเล่าความจริงที่เก็บไว้มานาน หญิงสาวในภาพคือคนรักของปู่ เธอเสียชีวิตในคืนที่เรือประมงล่มกลางทะเลเมื่อหลายสิบปีก่อน คืนเดียวกับที่พระจันทร์เต็มดวงพอดี นับแต่วันนั้นปู่เชื่อมั่นสุดหัวใจว่า หากเขายังคงจุดไฟประภาคารทุกคืนไม่ขาด จะไม่มีเรือลำใดต้องสูญหายกลางทะเลอีก ลุงแก้วมองหน้าหมิวอย่างสงสารก่อนพูดต่อว่า หญิงสาวในภาพนั้นแท้จริงแล้วคือยายแท้ ๆ ของเธอ ที่ไม่เคยมีใครในครอบครัวกล้าพูดถึงเลยแม้แต่คำเดียว",
+        questions:[
+          { q:"หมิวนำภาพวาดไปให้ใครดู", options:["นายอำเภอ","ลุงแก้ว","ทนายความ","เพื่อนสนิท"], correct:1 },
+          { q:"หญิงสาวในภาพวาดคือใครของปู่", options:["น้องสาวของปู่","คนรักของปู่","แม่ของปู่","เพื่อนบ้านของปู่"], correct:1 },
+          { q:"หญิงสาวในภาพเสียชีวิตอย่างไร", options:["ป่วยหนัก","เรือประมงล่มกลางทะเลคืนพระจันทร์เต็มดวง","อุบัติเหตุทางรถยนต์","ไฟไหม้บ้าน"], correct:1 },
+          { q:"ปู่เชื่อมั่นเรื่องใดหลังจากเหตุการณ์นั้น", options:["ต้องย้ายออกจากเกาะ","การจุดไฟประภาคารทุกคืนจะช่วยไม่ให้เรือสูญหายอีก","ต้องขายประภาคารทิ้ง","ห้ามใครเข้าใกล้ทะเลอีก"], correct:1 },
+          { q:"หญิงสาวในภาพเป็นใครของหมิวที่แท้จริง", options:["ป้าของหมิว","ยายแท้ ๆ ของหมิว","แม่บุญธรรมของปู่","เพื่อนเก่าของแม่หมิว"], correct:1 }
+        ]
+      },
+      {
+        title:"หน้าสุดท้ายที่หายไป",
+        passage:"เมื่อเข้าใจเรื่องราวทั้งหมด หมิวรู้สึกสงสารปู่ที่เธอไม่เคยมีโอกาสได้รู้จัก เธอตัดสินใจซ่อมกลไกโคมไฟให้เสร็จให้ทันก่อนคืนพระจันทร์เต็มดวงรอบถัดไปจะมาถึง ระหว่างค้นหาเครื่องมือในห้องใต้ดิน เธอพบสมุดบันทึกอีกเล่มหนึ่งซ่อนอยู่หลังหีบไม้ เป็นสมุดเล่มสุดท้ายที่ปู่เขียนไว้ก่อนเสียชีวิตไม่นาน หน้าแรกเขียนถึงเธอโดยตรงด้วยชื่อจริง หมิวอ่านด้วยมือสั่นเทา แต่เมื่อพลิกไปยังหน้าสุดท้ายที่คาดว่าจะเป็นคำอธิบายทุกอย่าง กลับพบว่าหน้ากระดาษนั้นถูกฉีกขาดหายไปอย่างจงใจ เหลือเพียงรอยฉีกขรุขระติดอยู่กับสันสมุด",
+        questions:[
+          { q:"หมิวตัดสินใจจะซ่อมโคมไฟให้เสร็จก่อนเหตุการณ์ใด", options:["ก่อนวันเกิดของเธอ","คืนพระจันทร์เต็มดวงรอบถัดไป","ก่อนหน้าฝนจะมาถึง","ก่อนลุงแก้วจะมาเยี่ยม"], correct:1 },
+          { q:"หมิวพบสมุดบันทึกเล่มใหม่อยู่ที่ใด", options:["ในห้องนอนปู่","ซ่อนอยู่หลังหีบไม้ในห้องใต้ดิน","บนโต๊ะทำงาน","ใต้เตียงของปู่"], correct:1 },
+          { q:"หน้าแรกของสมุดเล่มนี้เขียนถึงใคร", options:["เขียนถึงหญิงในภาพวาด","เขียนถึงหมิวโดยตรงด้วยชื่อจริง","เขียนถึงลุงแก้ว","ไม่ได้เขียนถึงใครเป็นพิเศษ"], correct:1 },
+          { q:"เกิดอะไรขึ้นกับหน้าสุดท้ายของสมุด", options:["เปียกน้ำจนอ่านไม่ออก","ถูกฉีกขาดหายไปอย่างจงใจ","ถูกเผาไหม้บางส่วน","ไม่มีข้อความใด ๆ เขียนไว้"], correct:1 },
+          { q:"สิ่งที่เหลืออยู่บนสันสมุดคืออะไร", options:["ริบบิ้นผูกเล่ม","รอยฉีกขรุขระ","ภาพวาดเล็ก ๆ","กลีบดอกไม้แห้ง"], correct:1 }
+        ]
+      },
+      {
+        title:"แสงไฟดวงใหม่",
+        passage:"คืนพระจันทร์เต็มดวงมาถึงอีกครั้ง หมิวซ่อมกลไกโคมไฟสำเร็จได้ในวินาทีสุดท้ายพอดี เธอจุดไฟด้วยมือของตัวเองเป็นครั้งแรกในชีวิต แสงสว่างจ้าพุ่งกวาดออกไปเหนือผืนทะเลมืดมิด ไม่นานนัก เรือประมงลำหนึ่งที่หลงทิศเพราะหมอกหนาก็แล่นเข้าฝั่งได้อย่างปลอดภัยด้วยแสงนำทางนั้นพอดี ชาวบ้านต่างพูดเป็นเสียงเดียวกันว่าไม่เคยเห็นแสงไฟจากประภาคารสว่างขนาดนี้มานานหลายสิบปีแล้ว หมิวยืนมองแสงไฟที่ตัวเองจุดขึ้น รู้สึกเหมือนได้สานต่อสิ่งที่ปู่และยายเริ่มต้นไว้เมื่อนานมาแล้ว แม้หน้าสุดท้ายของสมุดจะหายไปตลอดกาล แต่เธอก็เข้าใจแล้วว่าคำตอบที่แท้จริงไม่ได้อยู่ในตัวอักษรใด ๆ แต่อยู่ที่แสงไฟดวงนี้ที่เธอตั้งใจจะดูแลไว้ต่อไปไม่ให้ดับลงอีก",
+        questions:[
+          { q:"หมิวซ่อมโคมไฟสำเร็จเมื่อใด", options:["หนึ่งสัปดาห์ก่อนคืนพระจันทร์เต็มดวง","ในวินาทีสุดท้ายก่อนคืนพระจันทร์เต็มดวง","หลังคืนพระจันทร์เต็มดวงผ่านไปแล้ว","เธอไม่สามารถซ่อมได้สำเร็จ"], correct:1 },
+          { q:"แสงไฟจากประภาคารช่วยเหลือใครในคืนนั้น", options:["เรือประมงที่หลงทิศเพราะหมอกหนา","นักท่องเที่ยวที่หลงทาง","เรือขนส่งสินค้า","ไม่มีใครได้รับความช่วยเหลือ"], correct:0 },
+          { q:"ชาวบ้านพูดถึงแสงไฟครั้งนี้อย่างไร", options:["บอกว่าสว่างเกินไปจนแสบตา","ไม่เคยเห็นแสงสว่างขนาดนี้มานานหลายสิบปี","ไม่มีใครสังเกตเห็น","บ่นว่ารบกวนการนอน"], correct:1 },
+          { q:"หมิวรู้สึกอย่างไรเมื่อได้จุดไฟด้วยตัวเอง", options:["เสียใจที่ต้องทำหน้าที่นี้","เหมือนได้สานต่อสิ่งที่ปู่และยายเริ่มต้นไว้","เฉย ๆ ไม่รู้สึกอะไรเป็นพิเศษ","อยากขายประภาคารทิ้งทันที"], correct:1 },
+          { q:"หมิวเข้าใจว่าคำตอบที่แท้จริงอยู่ที่ใด", options:["อยู่ในหน้าสุดท้ายของสมุดที่หายไป","อยู่ที่แสงไฟที่เธอตั้งใจจะดูแลต่อไป","อยู่ที่คำบอกเล่าของลุงแก้ว","อยู่ที่ภาพวาดหญิงสาวปริศนา"], correct:1 }
+        ]
+      }
+    ]
+  },
+  {
+    key:"novel_series3", categoryKey:"novel", title:"ร้านกาแฟที่เปิดเฉพาะวันฝนตก (นวนิยายรายตอน)", color:"#754060",
+    chapters:[
+      {
+        title:"ร้านกาแฟกลางสายฝน",
+        passage:"เต๋าวิ่งหลบฝนที่เทลงมาอย่างไม่ทันตั้งตัวเข้าไปในตรอกแคบที่เขาไม่เคยเห็นมาก่อนทั้งที่เดินผ่านย่านนี้มาหลายปีแล้ว กลางตรอกมีร้านกาแฟเล็ก ๆ เปิดไฟสีส้มอุ่นตา ป้ายหน้าร้านเขียนว่า 'สายฝัน' เต๋าเดินเข้าไปหลบฝนพร้อมสั่งกาแฟร้อนหนึ่งแก้ว เจ้าของร้านเป็นหญิงสาวหน้าตาสงบนิ่งชื่อฝน เธอชงกาแฟให้ด้วยท่าทางคุ้นเคยราวกับรู้จักเขามานาน เต๋ารู้สึกอุ่นใจประหลาดทั้งที่เพิ่งเจอกันครั้งแรก เมื่อดื่มกาแฟจนหมดแก้วและฝนเริ่มซาลง เขาลุกขึ้นเพื่อเดินออกจากร้าน แต่พอหันหลังกลับไปมองอีกครั้ง ร้านกาแฟทั้งร้านกลับหายวับไปกับตา เหลือเพียงตรอกเปล่า ๆ ว่างเปล่า",
+        questions:[
+          { q:"เต๋าเจอร้านกาแฟระหว่างทำอะไร", options:["เดินเที่ยวเล่น","วิ่งหลบฝน","รอเพื่อนที่นัดไว้","หาที่กินข้าวเที่ยง"], correct:1 },
+          { q:"ชื่อร้านกาแฟที่เต๋าพบคือชื่ออะไร", options:["สายลม","สายฝัน","สายรุ้ง","สายน้ำ"], correct:1 },
+          { q:"เจ้าของร้านกาแฟชื่ออะไร", options:["ฟ้า","ฝน","เมฆ","แสง"], correct:1 },
+          { q:"เต๋ารู้สึกอย่างไรทั้งที่เพิ่งเจอฝนเป็นครั้งแรก", options:["กลัวและอึดอัด","อุ่นใจประหลาด","เฉยเมยไม่สนใจ","รำคาญใจ"], correct:1 },
+          { q:"เกิดอะไรขึ้นกับร้านกาแฟเมื่อฝนหยุดตก", options:["ร้านปิดไฟลงเงียบ ๆ","ร้านทั้งร้านหายวับไปกับตา","ฝนไล่เต๋าออกจากร้าน","ร้านเปลี่ยนเป็นร้านขายของชำ"], correct:1 }
+        ]
+      },
+      {
+        title:"ปฏิทินที่หยุดเวลา",
+        passage:"หลังจากวันนั้น เต๋าพยายามกลับไปหาร้านกาแฟสายฝันอีกหลายครั้งแต่ไม่เคยพบตรอกนั้นอีกเลย จนกระทั่งฝนตกหนักอีกครั้งในอีกหลายวันต่อมา ตรอกลึกลับก็ปรากฏขึ้นตรงหน้าเขาเหมือนไม่เคยหายไปไหน ฝนต้อนรับเขาด้วยรอยยิ้มราวกับรู้อยู่แล้วว่าเขาจะกลับมา เธอเล่าให้ฟังว่าร้านนี้เปิดได้เฉพาะวันที่ฝนตกเท่านั้น ส่วนสาเหตุนั้นแม้แต่ตัวเธอเองก็ไม่อาจอธิบายได้ ระหว่างนั่งฟัง เต๋าสังเกตเห็นปฏิทินเก่าใบหนึ่งแขวนอยู่บนผนัง หน้ากระดาษเปิดค้างอยู่ที่วันเดียวกันโดยไม่เคยเปลี่ยนเลย เมื่อสังเกตดี ๆ เขาพบว่าเป็นวันเดือนเดียวกันทุกปีที่ปฏิทินหยุดนิ่งอยู่ตรงนั้น",
+        questions:[
+          { q:"เต๋าพยายามทำอะไรหลังจากร้านหายไปในตอนที่แล้ว", options:["ลืมเรื่องร้านไปเลย","พยายามกลับไปหาร้านกาแฟสายฝันอีกหลายครั้ง","ไปแจ้งความว่าร้านหายตัวไป","ถามเพื่อนบ้านทุกคนเกี่ยวกับตรอกนั้น"], correct:1 },
+          { q:"ร้านกาแฟสายฝันปรากฏขึ้นอีกครั้งเมื่อใด", options:["เมื่อพระอาทิตย์ขึ้น","เมื่อฝนตกหนักอีกครั้ง","เมื่อถึงวันเกิดของเต๋า","เมื่อมีลมพายุ"], correct:1 },
+          { q:"ร้านนี้เปิดได้เฉพาะช่วงเวลาแบบใด", options:["เฉพาะตอนกลางคืน","เฉพาะวันที่ฝนตกเท่านั้น","เฉพาะวันหยุดสุดสัปดาห์","เฉพาะฤดูหนาว"], correct:1 },
+          { q:"เต๋าสังเกตเห็นอะไรแขวนอยู่บนผนังร้าน", options:["นาฬิกาเก่า","ปฏิทินเก่า","ภาพวาดทะเล","กระจกบานใหญ่"], correct:1 },
+          { q:"ปฏิทินใบนั้นมีลักษณะพิเศษอย่างไร", options:["เปลี่ยนหน้าทุกวันตามปกติ","หยุดนิ่งอยู่ที่วันเดือนเดียวกันทุกปี","ไม่มีตัวเลขใด ๆ เลย","เป็นปฏิทินของปีถัดไป"], correct:1 }
+        ]
+      },
+      {
+        title:"กาแฟถ้วยที่ไม่มีใครดื่ม",
+        passage:"เต๋าอดถามไม่ได้ว่าปฏิทินใบนั้นมีความหมายอย่างไร ฝนเงียบไปครู่หนึ่งก่อนตอบเบา ๆ ว่าวันนั้นคือวันที่เธอสูญเสียคนสำคัญที่สุดในชีวิตไป เธอไม่ได้เล่ารายละเอียดมากไปกว่านั้น และเต๋าก็ไม่กล้าถามต่อเพราะเห็นแววตาเศร้าของเธอ บรรยากาศในร้านเงียบลงไปพักหนึ่ง ก่อนฝนจะลุกไปชงกาแฟอีกแก้วอย่างเงียบ ๆ โดยไม่มีใครสั่ง เธอวางแก้วนั้นไว้บนโต๊ะตัวหนึ่งที่ไม่มีใครนั่ง แล้วพูดกับเต๋าด้วยน้ำเสียงแผ่วเบาว่า 'ถ้วยนี้ไม่ใช่ของคุณนะ' เต๋ามองแก้วกาแฟที่ควันยังลอยกรุ่นอยู่ด้วยความสงสัยเต็มหัว",
+        questions:[
+          { q:"ปฏิทินที่หยุดนิ่งมีความหมายอย่างไรกับฝน", options:["เป็นวันเกิดของเธอ","เป็นวันที่เธอสูญเสียคนสำคัญที่สุดในชีวิต","เป็นวันเปิดร้าน","เป็นวันที่เธอมาอยู่ในตรอกนี้"], correct:1 },
+          { q:"เต๋าไม่กล้าถามฝนต่อเพราะเหตุใด", options:["กลัวฝนโกรธ","เห็นแววตาเศร้าของเธอ","ฝนบอกให้หยุดถาม","ไม่มีเวลาพอ"], correct:1 },
+          { q:"ฝนลุกไปทำอะไรโดยไม่มีใครสั่ง", options:["ปิดร้านก่อนเวลา","ชงกาแฟอีกแก้ว","เปิดเพลงฟัง","ออกไปเดินเล่นนอกร้าน"], correct:1 },
+          { q:"ฝนวางกาแฟแก้วนั้นไว้ที่ใด", options:["บนเคาน์เตอร์","บนโต๊ะตัวหนึ่งที่ไม่มีใครนั่ง","ข้างหน้าต่าง","ในมือของเต๋า"], correct:1 },
+          { q:"ฝนพูดอะไรกับเต๋าเกี่ยวกับกาแฟแก้วนั้น", options:["ดื่มได้เลยไม่ต้องเกรงใจ","ถ้วยนี้ไม่ใช่ของคุณนะ","กาแฟแก้วนี้หมดอายุแล้ว","อย่าแตะต้องแก้วนี้เด็ดขาด"], correct:1 }
+        ]
+      },
+      {
+        title:"รูปถ่ายในกรอบเก่า",
+        passage:"เต๋าถามฝนว่ากาแฟแก้วนั้นแท้จริงแล้วชงรอใคร ฝนตอบด้วยน้ำเสียงสั่นเล็กน้อยว่า ทุกวันที่ฝนตกเธอจะชงกาแฟรอคนคนหนึ่งที่เคยสัญญาไว้ว่าจะกลับมาหาเธอเสมอ แต่เขาไม่เคยกลับมาอีกเลยนับแต่วันนั้น เต๋าฟังแล้วรู้สึกอึดอัดใจอย่างบอกไม่ถูก สายตาของเขาเหลือบไปเห็นกรอบรูปเก่าใบหนึ่งวางอยู่บนชั้นหลังเคาน์เตอร์ ในรูปเป็นภาพเด็กชายกับเด็กหญิงสองคนยืนยิ้มกันอยู่ใต้ร่ม เมื่อมองใบหน้าเด็กชายในรูปให้ชัดขึ้น เต๋าถึงกับชะงักไปทั้งตัว เพราะใบหน้านั้นละม้ายคล้ายกับตัวเขาเองอย่างไม่น่าเชื่อ ราวกับกำลังมองกระจกที่สะท้อนภาพในวัยเด็ก",
+        questions:[
+          { q:"กาแฟที่ฝนชงทุกวันฝนตกนั้นชงรอใคร", options:["ลูกค้าประจำ","คนที่เคยสัญญาว่าจะกลับมาหาเธอ","พ่อแม่ของเธอ","เพื่อนร่วมงานเก่า"], correct:1 },
+          { q:"เต๋าเห็นอะไรวางอยู่บนชั้นหลังเคาน์เตอร์", options:["แจกันดอกไม้","กรอบรูปเก่า","หนังสือเก่า","นาฬิกาพก"], correct:1 },
+          { q:"ในรูปถ่ายมีใครอยู่บ้าง", options:["ฝนกับแม่ของเธอ","เด็กชายกับเด็กหญิงสองคนยืนยิ้มกันใต้ร่ม","ฝนคนเดียวตอนเด็ก","ชาวบ้านทั้งหมู่บ้าน"], correct:1 },
+          { q:"เต๋ารู้สึกอย่างไรเมื่อมองใบหน้าเด็กชายในรูป", options:["เฉยเมยไม่สนใจ","ชะงักไปทั้งตัวเพราะคล้ายตัวเองมาก","หัวเราะออกมาด้วยความขำ","จำไม่ได้ว่าเคยเห็นที่ไหน"], correct:1 },
+          { q:"เต๋าเปรียบความรู้สึกนั้นเหมือนกับอะไร", options:["เหมือนฝันไป","เหมือนมองกระจกที่สะท้อนภาพในวัยเด็ก","เหมือนได้ยินเสียงเพลงเก่า","เหมือนอ่านนิยายที่คุ้นเคย"], correct:1 }
+        ]
+      },
+      {
+        title:"ชื่อที่ไม่เคยลืม",
+        passage:"เต๋าถามฝนอย่างตื่นเต้นว่าเด็กชายในรูปคือใคร ฝนมองหน้าเต๋าอย่างตกใจก่อนตอบด้วยเสียงสั่นว่าเด็กชายคนนั้นชื่ออาทิตย์ เพื่อนสนิทที่สุดตั้งแต่วัยเด็กของเธอ ก่อนที่เขาจะจากไปด้วยอุบัติเหตุเมื่อหลายปีก่อน เต๋าฟังแล้วรู้สึกใจเต้นแรงผิดปกติ ราวกับมีบางอย่างในใจเขาตอบสนองต่อชื่อนี้อย่างคุ้นเคย ทั้งที่เขาไม่เคยได้ยินชื่อนี้มาก่อนในชีวิตจริง คืนนั้นหลังกลับถึงบ้าน เต๋านอนไม่หลับ เขาพยายามนึกย้อนความทรงจำในวัยเด็กของตัวเอง จนจำได้ลาง ๆ ถึงความฝันซ้ำ ๆ ที่เขาเคยฝันมาตลอดหลายปี เป็นภาพเด็กสองคนวิ่งเล่นอยู่ท่ามกลางสายฝน",
+        questions:[
+          { q:"เด็กชายในรูปถ่ายชื่ออะไร", options:["อาทิตย์","จันทร์","ฝน","ทะเล"], correct:0 },
+          { q:"อาทิตย์เป็นใครของฝนในวัยเด็ก", options:["ญาติห่าง ๆ","เพื่อนสนิทที่สุด","เพื่อนบ้านที่ไม่ค่อยรู้จักกัน","พี่ชายแท้ ๆ"], correct:1 },
+          { q:"เกิดอะไรขึ้นกับอาทิตย์เมื่อหลายปีก่อน", options:["ย้ายไปอยู่ต่างประเทศ","จากไปด้วยอุบัติเหตุ","หายตัวไปอย่างไร้ร่องรอย","ป่วยหนักแต่รักษาหาย"], correct:1 },
+          { q:"เต๋ารู้สึกอย่างไรเมื่อได้ยินชื่ออาทิตย์", options:["ไม่รู้สึกอะไรเลย","ใจเต้นแรงผิดปกติราวกับคุ้นเคย","หัวเราะเพราะคิดว่าตลก","โกรธที่ฝนพูดเรื่องนี้"], correct:1 },
+          { q:"เต๋าจำความฝันซ้ำ ๆ ได้เป็นภาพอะไร", options:["เด็กสองคนวิ่งเล่นอยู่ท่ามกลางสายฝน","เรือแล่นอยู่กลางทะเล","บ้านเก่าที่ถูกไฟไหม้","ทุ่งดอกไม้กว้างใหญ่"], correct:0 }
+        ]
+      },
+      {
+        title:"คำถามที่ไม่กล้าตอบ",
+        passage:"เต๋ากลับไปเล่าความฝันที่เขาจำได้ให้ฝนฟังอย่างละเอียด เป็นภาพเด็กชายกับเด็กหญิงวิ่งเล่นใต้สายฝนพร้อมสัญญากันว่าจะกลับมาพบกันเสมอไม่ว่าจะเกิดอะไรขึ้น ฝนฟังไปน้ำตาก็ไหลไปด้วยโดยไม่รู้ตัว เพราะความฝันนั้นตรงกับความทรงจำของเธอกับอาทิตย์ทุกรายละเอียด ไม่ผิดเพี้ยนแม้แต่น้อย เธอมองหน้าเต๋าด้วยแววตาที่ผสมทั้งความหวังและความกลัวในเวลาเดียวกัน มือของเธอสั่นเล็กน้อยขณะยกแก้วกาแฟขึ้นมาจิบ ก่อนจะถามคำถามที่เก็บไว้ในใจมานานด้วยเสียงแผ่วเบาที่สุดเท่าที่เต๋าเคยได้ยินจากเธอว่า 'คุณคืออาทิตย์ใช่ไหม'",
+        questions:[
+          { q:"เต๋าเล่าอะไรให้ฝนฟังในตอนนี้", options:["เรื่องงานของเขา","ความฝันซ้ำ ๆ ที่เขาจำได้อย่างละเอียด","แผนการเดินทางของเขา","ประวัติครอบครัวของเขา"], correct:1 },
+          { q:"ความฝันของเต๋าตรงกับสิ่งใด", options:["นิยายที่ฝนเคยอ่าน","ความทรงจำของฝนกับอาทิตย์ทุกรายละเอียด","เพลงที่ฝนชอบฟัง","ไม่ตรงกับอะไรเลย"], correct:1 },
+          { q:"ฝนมีปฏิกิริยาอย่างไรขณะฟังเต๋าเล่า", options:["หัวเราะออกมา","น้ำตาไหลโดยไม่รู้ตัว","เดินออกจากร้านทันที","นิ่งเฉยไม่มีท่าทีใด ๆ"], correct:1 },
+          { q:"แววตาของฝนตอนมองหน้าเต๋าเป็นอย่างไร", options:["โกรธและผิดหวัง","ผสมทั้งความหวังและความกลัว","เย็นชาไม่มีอารมณ์","สับสนอย่างเดียว"], correct:1 },
+          { q:"คำถามที่ฝนถามเต๋าในที่สุดคืออะไร", options:["คุณจะกลับมาอีกไหม","คุณคืออาทิตย์ใช่ไหม","คุณชอบกาแฟแบบไหน","คุณอยู่ที่ไหนมาตลอด"], correct:1 }
+        ]
+      },
+      {
+        title:"ปฏิทินหน้าใหม่",
+        passage:"เต๋าไม่อาจตอบคำถามของฝนได้อย่างแน่ชัดว่าตัวเองคืออาทิตย์กลับชาติมาเกิดจริงหรือเป็นเพียงเรื่องบังเอิญที่คล้ายคลึงกันเกินไป แต่เขาเลือกที่จะไม่ปล่อยให้คำถามนั้นเป็นเงื่อนไขของความสัมพันธ์ระหว่างเขากับฝน เขากลับไปหาร้านกาแฟสายฝันทุกครั้งที่ฝนตก นั่งฟังเรื่องราวของเธอ และค่อย ๆ เติมเต็มช่องว่างในใจที่เธอเก็บไว้คนเดียวมานานแสนนาน วันหนึ่งเมื่อฝนเทลงมาอีกครั้ง เต๋าเดินเข้าร้านตามปกติ แต่สิ่งที่เขาสังเกตเห็นคือปฏิทินบนผนังที่ค้างอยู่ที่วันเดิมมาหลายปี ได้เปลี่ยนหน้าไปเป็นวันใหม่เป็นครั้งแรก ฝนหันมายิ้มให้เขาด้วยรอยยิ้มที่มีความสุขที่สุดเท่าที่เต๋าเคยเห็นจากเธอมาตลอด",
+        questions:[
+          { q:"เต๋าเลือกที่จะทำอย่างไรกับคำถามที่ยังไม่มีคำตอบ", options:["เลิกไปหาฝนอีกเลย","ไม่ปล่อยให้เป็นเงื่อนไขของความสัมพันธ์กับฝน","บังคับให้ฝนตอบให้ได้","เล่าให้คนอื่นฟังเพื่อหาคำตอบ"], correct:1 },
+          { q:"เต๋ากลับไปหาร้านกาแฟสายฝันเมื่อใด", options:["ทุกวันโดยไม่มีเงื่อนไข","ทุกครั้งที่ฝนตก","เฉพาะวันหยุดสุดสัปดาห์","เมื่อฝนเรียกเท่านั้น"], correct:1 },
+          { q:"เต๋าค่อย ๆ ทำอะไรให้กับฝน", options:["สอนให้เธอทำกาแฟสูตรใหม่","เติมเต็มช่องว่างในใจที่เธอเก็บไว้คนเดียว","ช่วยเธอย้ายร้านไปที่ใหม่","แนะนำให้เธอไปหาหมอ"], correct:1 },
+          { q:"สิ่งที่เปลี่ยนแปลงไปบนปฏิทินคืออะไร", options:["ปฏิทินหายไปทั้งใบ","เปลี่ยนหน้าไปเป็นวันใหม่เป็นครั้งแรก","มีคนมาเขียนข้อความใหม่ลงไป","ปฏิทินตกลงมาแตก"], correct:1 },
+          { q:"ฝนมีท่าทีอย่างไรเมื่อเห็นปฏิทินเปลี่ยนหน้า", options:["ร้องไห้เสียใจ","ยิ้มให้เต๋าด้วยความสุขที่สุดเท่าที่เคยเห็น","ตกใจจนทำแก้วกาแฟหล่น","ไม่ได้สังเกตเห็นอะไรเลย"], correct:1 }
+        ]
+      }
+    ]
+  }
+  ,
+  {
+    key:"hor_room302", categoryKey:"horror", title:"ห้อง 302 (สยองขวัญรายตอน)", color:"#5E1B1B",
+    chapters:[
+      {
+        title:"ย้ายเข้าตึกเก่า",
+        passage:"แนนเพิ่งย้ายเข้ามาอยู่คอนโดที่ดัดแปลงมาจากตึกโรงพยาบาลเก่าที่ปิดตัวไปกว่ายี่สิบปีก่อน เธอเลือกห้องเลขที่ 302 เพราะราคาถูกกว่าห้องอื่นในตึกเกือบครึ่ง นายหน้าบอกเพียงสั้น ๆ ว่าห้องนี้ 'ไม่ค่อยมีคนอยู่นาน' แต่ไม่ยอมอธิบายเพิ่มเติม คืนแรกที่แนนเข้านอน เธอรู้สึกเหมือนมีใครนอนเบียดอยู่ข้าง ๆ เตียงทั้งที่ห้องมีเพียงเธอคนเดียว เธอลืมตาขึ้นมองเพดานและเห็นรอยแตกเป็นเส้นยาวรูปร่างคล้ายตัวอักษรพาดผ่านตรงกลางห้อง ซึ่งเธอมั่นใจว่าไม่ได้อยู่ตรงนั้นตอนกลางวัน เธอปลอบใจตัวเองว่าคงเป็นเพราะเหนื่อยจากการขนของทั้งวัน จึงหลับตาลงอีกครั้งโดยไม่รู้ว่าเสียงหายใจแผ่ว ๆ ที่ดังอยู่ข้างหูนั้นไม่ใช่เสียงของตัวเธอเอง",
+        questions:[
+          { q:"แนนย้ายเข้ามาอยู่ที่ไหน", options:["บ้านเดี่ยวชานเมือง","คอนโดที่ดัดแปลงจากตึกโรงพยาบาลเก่า","หอพักนักศึกษา","อพาร์ตเมนต์ใหม่ริมทะเล"], correct:1 },
+          { q:"แนนเลือกห้องเลขที่เท่าไร", options:["201","302","405","108"], correct:1 },
+          { q:"นายหน้าพูดถึงห้องนี้ว่าอย่างไร", options:["'วิวสวยที่สุดในตึก'","'ไม่ค่อยมีคนอยู่นาน'","'เพิ่งทาสีใหม่'","'เงียบสงบมาก'"], correct:1 },
+          { q:"คืนแรกแนนรู้สึกอย่างไรตอนเข้านอน", options:["ร้อนผิดปกติ","เหมือนมีใครนอนเบียดอยู่ข้าง ๆ","ได้กลิ่นควันธูป","ได้ยินเสียงเพลง"], correct:1 },
+          { q:"สิ่งที่แนนเห็นบนเพดานคืออะไร", options:["คราบน้ำรั่ว","รอยแตกรูปร่างคล้ายตัวอักษร","หยากไย่จำนวนมาก","รอยเปื้อนสีดำ"], correct:1 }
+        ]
+      },
+      {
+        title:"เสียงตามผนัง",
+        passage:"คืนต่อมาแนนได้ยินเสียงคล้ายมีใครใช้เล็บขูดผนังห้องน้ำอย่างช้า ๆ เธอลุกไปเปิดไฟดูแต่ไม่พบสิ่งใดผิดปกติ นอกจากรอยขีดข่วนจาง ๆ บนกระเบื้องที่เธอสาบานได้ว่าเมื่อวานยังไม่มี เธอโทรถามเพื่อนบ้านห้อง 301 ว่าได้ยินเสียงแปลก ๆ บ้างหรือไม่ เพื่อนบ้านตอบเสียงสั่นว่าเคยได้ยินเหมือนกันช่วงตีสอง แต่เขาย้ายห้องนอนไปนอนที่โซฟาหน้าทีวีแทนมาหลายเดือนแล้วเพื่อจะได้ไม่ต้องได้ยินมันอีก เมื่อแนนถามต่อว่าเสียงนั้นฟังดูเหมือนอะไร เพื่อนบ้านเงียบไปครู่หนึ่งก่อนตอบว่าฟังดูเหมือนมีคนพยายามขูดผนังเพื่อหาทางออกจากข้างในห้องน้ำ ทั้งที่ผนังนั้นเป็นผนังคอนกรีตหนาไม่มีช่องว่างใด ๆ อยู่ข้างหลัง",
+        questions:[
+          { q:"เสียงที่แนนได้ยินคืนที่สองคล้ายเสียงอะไร", options:["เพลงกล่อมเด็ก","เล็บขูดผนังห้องน้ำ","เสียงฝนตก","เสียงเคาะประตู"], correct:1 },
+          { q:"แนนพบอะไรบนกระเบื้องที่เมื่อวานยังไม่มี", options:["รอยเลือด","รอยขีดข่วนจาง ๆ","รอยเท้าเปียก","คราบเขม่าดำ"], correct:1 },
+          { q:"แนนโทรถามเพื่อนบ้านห้องใด", options:["ห้อง 301","ห้อง 303","ห้อง 202","ห้อง 401"], correct:0 },
+          { q:"เพื่อนบ้านย้ายไปนอนที่ไหนแทน", options:["ห้องครัว","โซฟาหน้าทีวี","ระเบียง","บ้านญาติ"], correct:1 },
+          { q:"เพื่อนบ้านบอกว่าเสียงนั้นฟังดูเหมือนอะไร", options:["ลมพัดเข้าท่อ","มีคนพยายามขูดผนังเพื่อหาทางออกจากข้างในห้องน้ำ","หนูวิ่งในผนัง","น้ำหยดจากเพดาน"], correct:1 }
+        ]
+      },
+      {
+        title:"ผู้เช่าคนก่อน",
+        passage:"แนนตัดสินใจค้นดูของเก่าที่ถูกทิ้งไว้ในตู้เสื้อผ้าบิลท์อินซึ่งไม่มีใครเอาออกไปตอนเธอย้ายเข้ามา เธอพบสมุดบันทึกเล่มเล็กปกหนังสีน้ำตาลซุกอยู่ใต้แผ่นไม้รองตู้ ในหน้าสุดท้ายที่มีลายมือคนเขียนบันทึกว่า 'คืนนี้มันมาเร็วกว่าเดิม ฉันนับได้ว่ามันเคาะผนังสิบเจ็ดครั้งก่อนหยุด ถ้าใครเจอสมุดเล่มนี้ อย่าตอบเมื่อได้ยินเสียงเรียกชื่อตัวเองตอนตีสาม เพราะมันไม่ใช่เสียงของคนที่เรารู้จัก' ไม่มีการเขียนต่อจากหน้านั้นอีกเลย แนนค้นชื่อผู้เช่าคนก่อนจากสัญญาเช่าเก่าที่นายหน้าเผลอทิ้งไว้ในแฟ้ม พบว่าผู้เช่าคนนั้นแจ้งย้ายออกกะทันหันเมื่อสิบเดือนก่อนโดยไม่ทิ้งที่อยู่ใหม่ไว้เลย และไม่เคยมารับเงินประกันคืนแม้แต่บาทเดียว",
+        questions:[
+          { q:"แนนพบสมุดบันทึกอยู่ที่ไหน", options:["ในลิ้นชักครัว","ใต้แผ่นไม้รองตู้เสื้อผ้าบิลท์อิน","ใต้เตียง","ในกล่องรองเท้า"], correct:1 },
+          { q:"บันทึกหน้าสุดท้ายระบุว่ามันเคาะผนังกี่ครั้ง", options:["เจ็ดครั้ง","สิบเจ็ดครั้ง","สามครั้ง","ยี่สิบครั้ง"], correct:1 },
+          { q:"บันทึกเตือนว่าห้ามทำอะไรตอนตีสาม", options:["ห้ามเปิดไฟ","ห้ามตอบเมื่อได้ยินเสียงเรียกชื่อตัวเอง","ห้ามออกจากห้อง","ห้ามนอนหลับ"], correct:1 },
+          { q:"แนนพบชื่อผู้เช่าคนก่อนจากอะไร", options:["ใบเสร็จค่าน้ำ","สัญญาเช่าเก่าที่นายหน้าเผลอทิ้งไว้ในแฟ้ม","จดหมายในตู้ไปรษณีย์","ป้ายชื่อหน้าประตู"], correct:1 },
+          { q:"ผู้เช่าคนก่อนย้ายออกกะทันหันเมื่อกี่เดือนก่อน", options:["สามเดือนก่อน","สิบเดือนก่อน","หนึ่งปีก่อน","สองเดือนก่อน"], correct:1 }
+        ]
+      },
+      {
+        title:"กระจกในห้องน้ำ",
+        passage:"ตั้งแต่คืนที่พบสมุดบันทึก แนนเริ่มหลีกเลี่ยงการมองกระจกในห้องน้ำนานเกินจำเป็น แต่คืนหนึ่งขณะแปรงฟัน เธอสังเกตว่าเงาของตัวเองในกระจกขยับช้ากว่าตัวเธอเสี้ยววินาที เหมือนภาพวิดีโอที่ดีเลย์เล็กน้อย เธอหยุดขยับแขนแล้วจ้องดูอย่างตั้งใจ เงาในกระจกหยุดตามเธอไปครู่หนึ่งก่อนจะยกมือขึ้นทักทายเธอทั้งที่แนนไม่ได้ขยับมือเลยแม้แต่นิ้วเดียว เธอรีบดับไฟวิ่งออกจากห้องน้ำโดยไม่กล้าหันกลับไปมอง คืนนั้นเธอนอนไม่หลับทั้งคืนโดยเปิดไฟทุกดวงในห้องทิ้งไว้ รุ่งเช้าเมื่อเธอกล้ากลับเข้าไปในห้องน้ำอีกครั้ง เธอพบว่ากระจกบานนั้นมีไอฝ้าจับเป็นรอยฝ่ามือขนาดเล็กกว่ามือของเธอมากติดอยู่ตรงกลางบาน ทั้งที่ไม่มีใครอาบน้ำในห้องนั้นมาตั้งแต่เมื่อวาน",
+        questions:[
+          { q:"แนนสังเกตความผิดปกติอะไรในกระจก", options:["กระจกมีรอยแตก","เงาของตัวเองขยับช้ากว่าตัวเธอเสี้ยววินาที","กระจกมีฝ้าเต็มบาน","กระจกมีสีเหลืองผิดปกติ"], correct:1 },
+          { q:"เงาในกระจกทำอะไรทั้งที่แนนไม่ได้ขยับมือ", options:["ปิดหน้าตัวเอง","ยกมือขึ้นทักทายเธอ","หันหลังกลับ","ชี้นิ้วมาที่เธอ"], correct:1 },
+          { q:"คืนนั้นแนนทำอย่างไรเพื่อให้พอหลับได้บ้าง", options:["เปิดเพลงดัง ๆ","เปิดไฟทุกดวงในห้องทิ้งไว้","โทรหาเพื่อน","ออกไปนอนนอกบ้าน"], correct:1 },
+          { q:"รุ่งเช้าแนนพบอะไรบนกระจก", options:["รอยเลือด","ไอฝ้าเป็นรอยฝ่ามือขนาดเล็กกว่ามือของเธอ","รอยแตกร้าว","รอยเขียนด้วยลิปสติก"], correct:1 },
+          { q:"เหตุใดรอยฝ่ามือบนกระจกจึงน่ากลัวเป็นพิเศษ", options:["เพราะเป็นรอยเลือด","เพราะไม่มีใครอาบน้ำในห้องนั้นมาตั้งแต่เมื่อวาน","เพราะมีกลิ่นเหม็น","เพราะปรากฏขึ้นตอนกลางวัน"], correct:1 }
+        ]
+      },
+      {
+        title:"ป้ายชื่อเก่า",
+        passage:"แนนลองถามลุงยามที่ดูแลตึกมานานเกี่ยวกับประวัติของตึกก่อนจะถูกดัดแปลงเป็นคอนโด ลุงยามลังเลอยู่นานก่อนเล่าว่าตึกนี้เคยเป็นแผนกผู้ป่วยจิตเวชของโรงพยาบาลเก่า และห้อง 302 ในปัจจุบันตรงกับตำแหน่งของห้องพักคนไข้หมายเลข 7 ซึ่งเคยเกิดเหตุคนไข้หญิงรายหนึ่งเสียชีวิตอย่างปริศนาในคืนที่มีพายุใหญ่เมื่อกว่าสามสิบปีก่อน เจ้าหน้าที่ในตอนนั้นพบเพียงว่าประตูห้องถูกล็อกจากด้านในตลอดเวลา และบนผนังมีรอยขีดข่วนเป็นแนวยาวคล้ายมีใครพยายามไต่ขึ้นไปหาหน้าต่างซึ่งอยู่สูงเกินมือคนจะเอื้อมถึง ลุงยามบอกว่าหลังจากเหตุการณ์นั้น ทางโรงพยาบาลได้เปลี่ยนป้ายชื่อห้องจากหมายเลข 7 เป็นตัวอักษร 'ด' แทน เพราะไม่มีใครยอมเข้าไปทำงานในห้องที่มีเลข 7 กำกับอีกเลย",
+        questions:[
+          { q:"ตึกนี้เคยเป็นแผนกใดของโรงพยาบาลเก่า", options:["แผนกฉุกเฉิน","แผนกผู้ป่วยจิตเวช","แผนกเด็กแรกเกิด","แผนกศัลยกรรม"], correct:1 },
+          { q:"ห้อง 302 ปัจจุบันตรงกับห้องพักคนไข้หมายเลขใดในอดีต", options:["หมายเลข 3","หมายเลข 7","หมายเลข 12","หมายเลข 1"], correct:1 },
+          { q:"คนไข้หญิงเสียชีวิตในคืนแบบใด", options:["คืนที่มีพายุใหญ่","คืนวันเพ็ญ","คืนที่ไฟดับ","คืนปีใหม่"], correct:0 },
+          { q:"เจ้าหน้าที่พบว่าประตูห้องเป็นอย่างไร", options:["เปิดอยู่ตลอดเวลา","ถูกล็อกจากด้านในตลอดเวลา","ถูกทุบพัง","หายไปทั้งบาน"], correct:1 },
+          { q:"หลังเหตุการณ์นั้น โรงพยาบาลเปลี่ยนป้ายชื่อห้องเป็นอะไร", options:["หมายเลข 13","ตัวอักษร 'ด'","ไม่มีป้าย","หมายเลข 0"], correct:1 }
+        ]
+      },
+      {
+        title:"เที่ยงคืนกะเปลี่ยน",
+        passage:"แนนเริ่มสังเกตว่านาฬิกาปลุกข้างเตียงของเธอจะหยุดเดินที่เวลา 23:47 น. พอดีทุกคืน ก่อนจะกระโดดกลับมาเดินตามปกติในอีกไม่กี่นาทีถัดมา เธอลองเปลี่ยนนาฬิกาใหม่หลายเรือนแต่ก็เกิดเหตุการณ์เดียวกันซ้ำทุกครั้ง คืนหนึ่งขณะนาฬิกาหยุดเดิน เธอได้ยินเสียงเปิดปิดประตูตู้เสื้อผ้าดังสลับกันเป็นจังหวะคล้ายมีใครกำลังนับของอยู่ข้างใน ตามด้วยเสียงกระซิบแผ่วเบาเป็นภาษาที่เธอฟังไม่ออก เธอตัดสินใจอัดวิดีโอห้องทิ้งไว้ทั้งคืนโดยไม่กล้านอนดูตอนนั้น รุ่งเช้าเมื่อเปิดไฟล์วิดีโอดู เธอเห็นภาพเงาสีดำร่างเล็กคลานออกมาจากใต้เตียงตรงเวลา 23:47 น. พอดี แล้วยืนนิ่งอยู่หน้ากล้องนานเกือบหนึ่งนาทีก่อนจะเลือนหายไปกับความมืด",
+        questions:[
+          { q:"นาฬิกาข้างเตียงของแนนหยุดเดินที่เวลาใดทุกคืน", options:["00:00 น.","23:47 น.","03:00 น.","18:30 น."], correct:1 },
+          { q:"คืนหนึ่งแนนได้ยินเสียงอะไรจากตู้เสื้อผ้า", options:["เสียงเพลง","เสียงเปิดปิดประตูตู้สลับกันเป็นจังหวะคล้ายมีใครนับของ","เสียงร้องไห้","เสียงกรน"], correct:1 },
+          { q:"แนนตัดสินใจทำอะไรเพื่อพิสูจน์สิ่งที่เกิดขึ้น", options:["ย้ายเตียงหนี","อัดวิดีโอห้องทิ้งไว้ทั้งคืน","เปิดเพลงข่มเสียง","ล็อกตู้เสื้อผ้า"], correct:1 },
+          { q:"ในวิดีโอ แนนเห็นอะไรคลานออกมาจากใต้เตียง", options:["แมว","เงาสีดำร่างเล็ก","มือเปล่า ๆ","หนังสือเล่มหนึ่ง"], correct:1 },
+          { q:"เงาในวิดีโอยืนอยู่หน้ากล้องนานเท่าใดก่อนหายไป", options:["ไม่กี่วินาที","เกือบหนึ่งนาที","ห้านาที","ทั้งคืน"], correct:1 }
+        ]
+      },
+      {
+        title:"ผู้เช่าคนถัดไป",
+        passage:"หลังดูวิดีโอ แนนตัดสินใจจะย้ายออกจากห้อง 302 ทันทีโดยไม่สนใจเงินประกันที่จะเสียไป เธอโทรแจ้งนายหน้าและรีบเก็บของทั้งคืน แต่ขณะกำลังยกกล่องสุดท้ายออกจากห้อง เธอเหลือบไปเห็นสมุดบันทึกเล่มเดิมที่เธอเคยพบวางเปิดอยู่บนโต๊ะทั้งที่เธอจำได้แน่ชัดว่าได้เก็บมันใส่กล่องไปแล้ว มีข้อความใหม่ที่ไม่เคยมีมาก่อนเขียนด้วยลายมือคล้ายของเธอเองว่า 'ยินดีต้อนรับ ฉันรอมานานมากแล้ว' แนนรีบวิ่งออกจากตึกโดยไม่หันกลับไปมองอีก หนึ่งสัปดาห์ต่อมา นายหน้าคนเดิมพาผู้เช่าใหม่คู่หนึ่งเข้าชมห้อง 302 พร้อมพูดประโยคเดิมที่เคยพูดกับแนนไม่ผิดเพี้ยนแม้แต่คำเดียวว่าห้องนี้ 'ไม่ค่อยมีคนอยู่นาน' โดยไม่มีใครสังเกตเห็นว่าในมุมมืดของตู้เสื้อผ้าบิลท์อิน มีเงาร่างเล็กยืนนิ่งจ้องมองพวกเขาอยู่อย่างเงียบเชียบ",
+        questions:[
+          { q:"แนนตัดสินใจทำอะไรหลังดูวิดีโอ", options:["ล้างกระจกใหม่","ย้ายออกจากห้อง 302 ทันที","ทำพิธีไล่ผี","เปลี่ยนล็อกประตู"], correct:1 },
+          { q:"แนนพบสมุดบันทึกอีกครั้งในสภาพอย่างไร", options:["ถูกเผาไหม้","เปิดอยู่บนโต๊ะทั้งที่เก็บใส่กล่องไปแล้ว","หายไปทั้งเล่ม","เปียกน้ำ"], correct:1 },
+          { q:"ข้อความใหม่ในสมุดบันทึกเขียนว่าอย่างไร", options:["'อย่ากลับมาอีก'","'ยินดีต้อนรับ ฉันรอมานานมากแล้ว'","'ขอบคุณที่มาเยือน'","'ห้ามเข้าห้องนี้'"], correct:1 },
+          { q:"หนึ่งสัปดาห์ต่อมา นายหน้าพาใครเข้าชมห้อง 302", options:["ช่างซ่อมแอร์","ผู้เช่าใหม่คู่หนึ่ง","ตำรวจ","นักข่าว"], correct:1 },
+          { q:"ตอนจบของเรื่อง มีอะไรซ่อนอยู่ในมุมมืดของตู้เสื้อผ้า", options:["กล่องของแนนที่ลืมไว้","เงาร่างเล็กยืนนิ่งจ้องมองพวกเขา","แมวจรจัด","สมุดบันทึกเล่มใหม่"], correct:1 }
+        ]
+      }
+    ]
+  },
+  {
+    key:"hor_praingam", categoryKey:"horror", title:"หมู่บ้านไพรงาม (สยองขวัญรายตอน)", color:"#4A2015",
+    chapters:[
+      {
+        title:"ทางลัดยามค่ำ",
+        passage:"เอกและปอนด์ขับรถกลับจากงานแต่งงานเพื่อนที่ต่างจังหวัดตอนดึก ทั้งคู่ตัดสินใจใช้เส้นทางลัดผ่านป่าที่แอปนำทางแนะนำเพื่อประหยัดเวลาเกือบชั่วโมง ถนนเริ่มแคบลงเรื่อย ๆ จนเหลือเพียงทางดินสองเลนที่ไม่มีไฟส่องสว่างใด ๆ สัญญาณโทรศัพท์ของทั้งคู่ขาดหายไปพร้อมกันทันทีที่ผ่านป้ายไม้เก่าเขียนว่า 'ทางเข้าตำบลไพรงาม' ซึ่งเอกไม่เคยได้ยินชื่อตำบลนี้มาก่อนทั้งที่ขับรถผ่านเส้นทางนี้มาหลายครั้งแล้ว ปอนด์สังเกตว่าหมอกเริ่มลงหนาขึ้นผิดปกติจนมองเห็นระยะทางข้างหน้าได้เพียงไม่กี่เมตร และรู้สึกเหมือนมีแสงไฟสีเหลืองอ่อน ๆ ลอยอยู่ริมทางทั้งสองฝั่งราวกับมีคนถือตะเกียงเดินตามรถอยู่ตลอดเวลา",
+        questions:[
+          { q:"เอกและปอนด์ขับรถกลับจากที่ใด", options:["งานเลี้ยงบริษัท","งานแต่งงานเพื่อนที่ต่างจังหวัด","ทริปตั้งแคมป์","งานบวช"], correct:1 },
+          { q:"ทำไมทั้งคู่จึงเลือกใช้เส้นทางลัด", options:["ต้องการชมวิวป่า","เพื่อประหยัดเวลาเกือบชั่วโมงตามที่แอปนำทางแนะนำ","น้ำมันใกล้หมด","หนีรถติด"], correct:1 },
+          { q:"ป้ายไม้เก่าที่ทั้งคู่ผ่านเขียนว่าอย่างไร", options:["'ทางเข้าตำบลไพรงาม'","'เขตหวงห้าม'","'ทางตัน'","'ยินดีต้อนรับสู่อำเภอ'"], correct:0 },
+          { q:"เกิดอะไรขึ้นกับสัญญาณโทรศัพท์ของทั้งคู่", options:["แบตหมดพร้อมกัน","ขาดหายไปทันทีที่ผ่านป้าย","สัญญาณแรงขึ้น","โทรศัพท์ดับไปเอง"], correct:1 },
+          { q:"ปอนด์สังเกตเห็นอะไรลอยอยู่ริมทางทั้งสองฝั่ง", options:["หิ่งห้อยจำนวนมาก","แสงไฟสีเหลืองอ่อน ๆ คล้ายมีคนถือตะเกียงเดินตามรถ","ควันไฟป่า","แสงไฟรถบรรทุก"], correct:1 }
+        ]
+      },
+      {
+        title:"หมู่บ้านกลางหมอก",
+        passage:"รถของเอกดับกะทันหันกลางทางโดยไม่มีสาเหตุ ทั้งที่เพิ่งเติมน้ำมันเต็มถังมาก่อนออกเดินทาง ทั้งคู่จำต้องเดินเท้าต่อไปตามแสงไฟรางเลือนที่มองเห็นอยู่ไกล ๆ จนมาถึงหมู่บ้านเล็ก ๆ แห่งหนึ่งที่มีบ้านเรือนไม้เก่าเรียงรายราวสิบหลังตั้งอยู่รอบลานดินกลางหมู่บ้าน ทั้งที่เวลานั้นดึกมากแล้วแต่กลับมีชาวบ้านหลายคนยังนั่งอยู่หน้าบ้านของตัวเองราวกับรอคอยใครบางคนอยู่ ชายชราคนหนึ่งเดินเข้ามาทักทายทั้งคู่อย่างเป็นมิตรผิดปกติ แนะนำตัวว่าชื่อตาผล เป็นผู้ใหญ่บ้าน และเชิญให้ทั้งคู่เข้าไปพักในหมู่บ้านคืนนี้ก่อนโดยไม่ต้องเกรงใจ เพราะกว่าจะหารถมารับได้ก็คงต้องรอถึงเช้า ปอนด์สังเกตว่าไม่มีบ้านหลังใดในหมู่บ้านนี้มีสายไฟหรือเสาไฟฟ้าอยู่เลยแม้แต่ต้นเดียว ทั้งที่แสงในบ้านทุกหลังสว่างไสวราวกับเปิดไฟฟ้าอยู่ตามปกติ",
+        questions:[
+          { q:"รถของเอกดับกะทันหันทั้งที่เพิ่งทำอะไรมาก่อน", options:["ล้างรถ","เติมน้ำมันเต็มถัง","เช็คระยะ","ซ่อมแอร์รถ"], correct:1 },
+          { q:"หมู่บ้านที่ทั้งคู่พบมีบ้านเรือนไม้เก่าประมาณกี่หลัง", options:["ราวห้าหลัง","ราวสิบหลัง","ราวสามสิบหลัง","เพียงหลังเดียว"], correct:1 },
+          { q:"ชายชราที่เข้ามาทักทายชื่ออะไรและมีตำแหน่งใด", options:["ตาสี เป็นหมอผี","ตาผล เป็นผู้ใหญ่บ้าน","ลุงเคียม เป็นชาวนา","ปู่หมาน เป็นพระ"], correct:1 },
+          { q:"ตาผลเชิญให้ทั้งคู่ทำอะไร", options:["ออกจากหมู่บ้านทันที","เข้าไปพักในหมู่บ้านคืนนี้ก่อน","ไปหาตำรวจ","ช่วยซ่อมรถ"], correct:1 },
+          { q:"ปอนด์สังเกตความผิดปกติอะไรเกี่ยวกับไฟในหมู่บ้าน", options:["ไฟดับทั้งหมู่บ้าน","ไม่มีสายไฟหรือเสาไฟฟ้าเลย แต่บ้านทุกหลังกลับสว่างไสว","มีไฟกะพริบตลอดเวลา","ไฟเป็นสีแดงทั้งหมด"], correct:1 }
+        ]
+      },
+      {
+        title:"บ้านพักแรกคืน",
+        passage:"ตาผลพาเอกและปอนด์ไปพักที่บ้านหลังหนึ่งซึ่งจัดเตรียมที่นอนและอาหารไว้ล่วงหน้าราวกับรู้ว่าจะมีแขกมาพอดี ปอนด์รู้สึกแปลกใจที่ทุกอย่างในบ้านดูสะอาดเรียบร้อยเกินกว่าจะเป็นบ้านที่ไม่มีคนอยู่มานาน ขณะกินข้าว เธอสังเกตว่าชาวบ้านที่นั่งร่วมโต๊ะไม่มีใครกินอาหารเลยแม้แต่คำเดียว ได้แต่นั่งยิ้มมองทั้งคู่กินอย่างเงียบ ๆ เมื่อเอกถามตาผลว่าหมู่บ้านนี้ชื่ออะไรและอยู่ห่างจากตัวอำเภอเท่าไร ตาผลเพียงยิ้มแล้วตอบว่า 'อยู่ใกล้กว่าที่คิดมาก แต่หาทางเข้ายากกว่าที่คิดเหมือนกัน' คืนนั้นก่อนนอน ปอนด์ได้ยินเสียงเด็กหัวเราะคิกคักดังมาจากนอกบ้านเป็นระยะ ทั้งที่ตลอดทั้งคืนไม่เห็นเด็กสักคนเดียวในหมู่บ้านนี้เลย",
+        questions:[
+          { q:"ปอนด์รู้สึกแปลกใจอะไรเกี่ยวกับบ้านที่พัก", options:["บ้านเก่าทรุดโทรมมาก","สะอาดเรียบร้อยเกินกว่าจะเป็นบ้านที่ไม่มีคนอยู่มานาน","บ้านไม่มีหน้าต่าง","บ้านมีกลิ่นเหม็นมาก"], correct:1 },
+          { q:"ชาวบ้านที่นั่งร่วมโต๊ะทำอะไรขณะกินข้าว", options:["กินอย่างรีบเร่ง","ไม่มีใครกินอาหารเลย ได้แต่นั่งยิ้มมอง","ร้องเพลงพร้อมกัน","ทะเลาะกันเสียงดัง"], correct:1 },
+          { q:"ตาผลตอบคำถามเรื่องระยะทางของหมู่บ้านว่าอย่างไร", options:["'ไกลมากจนไม่มีใครมาถึง'","'อยู่ใกล้กว่าที่คิดมาก แต่หาทางเข้ายากกว่าที่คิดเหมือนกัน'","'อยู่ติดถนนใหญ่'","'ไม่เคยมีใครถามแบบนี้มาก่อน'"], correct:1 },
+          { q:"ปอนด์ได้ยินเสียงอะไรดังมาจากนอกบ้านตอนกลางคืน", options:["เสียงหมาเห่า","เสียงเด็กหัวเราะคิกคัก","เสียงกลองรัว","เสียงร้องเพลงกล่อม"], correct:1 },
+          { q:"เหตุใดเสียงเด็กหัวเราะจึงน่าประหลาดใจ", options:["เพราะดังมากผิดปกติ","เพราะตลอดคืนไม่เห็นเด็กสักคนในหมู่บ้านนี้เลย","เพราะฟังดูเหมือนผู้ใหญ่","เพราะดังมาจากในบ้านที่พัก"], correct:1 }
+        ]
+      },
+      {
+        title:"งานเทศกาลประจำปี",
+        passage:"เช้าวันรุ่งขึ้น เอกและปอนด์ตื่นมาพบว่าทั้งหมู่บ้านกำลังประดับประดาลานดินกลางหมู่บ้านด้วยธงกระดาษสีขาวและโคมไฟกระดาษจำนวนมาก ตาผลอธิบายว่าคืนนี้เป็นคืนงานเทศกาลประจำปีของหมู่บ้านที่จัดขึ้นทุกร้อยวันพอดี และเชิญให้ทั้งคู่ร่วมงานก่อนจะเดินทางกลับในวันพรุ่งนี้ ระหว่างวัน ปอนด์เห็นชาวบ้านกำลังจัดเตรียมโต๊ะยาวกลางลาน วางจานเปล่าเรียงรายไว้เป็นจำนวนมากกว่าจำนวนคนในหมู่บ้านที่เธอนับได้หลายเท่า เมื่อเธอถามหญิงชราคนหนึ่งว่าจานเปล่าเหล่านั้นเตรียมไว้สำหรับใคร หญิงชรายิ้มแล้วตอบเบา ๆ ว่า 'สำหรับแขกที่มาเยือนทุกร้อยวันไงจ๊ะ หมู่บ้านเราต้อนรับแขกเสมอ' ก่อนจะเดินจากไปโดยไม่พูดอะไรเพิ่มเติม",
+        questions:[
+          { q:"คืนนั้นเป็นคืนงานเทศกาลที่จัดขึ้นทุกกี่วัน", options:["ทุกเจ็ดวัน","ทุกร้อยวัน","ทุกปี","ทุกเดือน"], correct:1 },
+          { q:"ชาวบ้านกำลังจัดเตรียมอะไรกลางลาน", options:["เวทีดนตรี","โต๊ะยาว วางจานเปล่าเรียงรายไว้จำนวนมาก","กองไฟใหญ่","ซุ้มขายของ"], correct:1 },
+          { q:"จำนวนจานเปล่าเป็นอย่างไรเมื่อเทียบกับจำนวนคนในหมู่บ้าน", options:["เท่ากันพอดี","มากกว่าจำนวนคนในหมู่บ้านหลายเท่า","น้อยกว่ามาก","ไม่มีจานเลย"], correct:1 },
+          { q:"หญิงชราตอบว่าจานเปล่าเตรียมไว้สำหรับใคร", options:["สำหรับเด็กในหมู่บ้าน","สำหรับแขกที่มาเยือนทุกร้อยวัน","สำหรับพระสงฆ์","สำหรับคนที่เสียชีวิตไปแล้ว"], correct:1 },
+          { q:"หมู่บ้านประดับลานดินด้วยอะไร", options:["ดอกไม้สด","ธงกระดาษสีขาวและโคมไฟกระดาษ","ผ้าสีแดง","ลูกโป่งหลากสี"], correct:1 }
+        ]
+      },
+      {
+        title:"เด็กที่ไม่มีเงา",
+        passage:"ระหว่างเดินเล่นรอบหมู่บ้านในช่วงบ่าย ปอนด์เห็นเด็กหญิงตัวเล็กคนหนึ่งยืนเล่นอยู่คนเดียวใต้ต้นไทรใหญ่กลางหมู่บ้านเป็นครั้งแรกนับตั้งแต่มาถึง เธอเดินเข้าไปทักทายด้วยความเอ็นดู แต่เมื่อก้มมองลงไปที่พื้นดินใต้แสงแดดจ้า เธอสังเกตเห็นว่าเด็กหญิงคนนั้นไม่มีเงาทอดลงบนพื้นเลยแม้แต่น้อย ทั้งที่ต้นไม้และสิ่งของรอบตัวต่างมีเงาทอดยาวตามปกติ ปอนด์รู้สึกขนลุกขึ้นมาทันทีแต่พยายามทำเป็นปกติ เด็กหญิงเงยหน้ามองเธอแล้วพูดด้วยน้ำเสียงใสบริสุทธิ์ว่า 'พี่จะอยู่ร่วมงานเลี้ยงกับหนูคืนนี้ใช่ไหมคะ ทุกคนที่มาถึงตอนกลางคืนแบบพี่ไม่เคยกลับไปทันในคืนถัดไปเลยสักคน' ก่อนจะวิ่งหายลับไปหลังต้นไทรโดยไม่ทิ้งร่องรอยฝุ่นดินฟุ้งขึ้นแม้แต่นิดเดียว",
+        questions:[
+          { q:"ปอนด์เห็นเด็กหญิงเล่นอยู่ที่ใด", options:["ริมบ่อน้ำ","ใต้ต้นไทรใหญ่กลางหมู่บ้าน","ในโรงนา","หน้าบ้านตาผล"], correct:1 },
+          { q:"สิ่งผิดปกติที่ปอนด์สังเกตเห็นเกี่ยวกับเด็กหญิงคืออะไร", options:["ตัวเย็นผิดปกติ","ไม่มีเงาทอดลงบนพื้นเลย","พูดภาษาที่ฟังไม่ออก","ตาสีขาวทั้งดวง"], correct:1 },
+          { q:"เด็กหญิงพูดว่าคนที่มาถึงตอนกลางคืนเป็นอย่างไร", options:["จะได้รับพรพิเศษ","ไม่เคยกลับไปทันในคืนถัดไปเลยสักคน","จะกลายเป็นผู้ใหญ่บ้านคนใหม่","จะได้เป็นเพื่อนกับหนูตลอดไป"], correct:1 },
+          { q:"หลังพูดจบเด็กหญิงทำอะไร", options:["ร้องไห้แล้ววิ่งหนี","วิ่งหายลับไปหลังต้นไทรโดยไม่มีฝุ่นดินฟุ้งขึ้น","ยืนนิ่งไม่ขยับ","เดินตามปอนด์กลับบ้าน"], correct:1 },
+          { q:"ปอนด์รู้สึกอย่างไรหลังเห็นความผิดปกติของเด็กหญิง", options:["ไม่รู้สึกอะไรเลย","ขนลุกขึ้นมาทันทีแต่พยายามทำเป็นปกติ","หัวเราะออกมาเพราะตลก","อยากพาเด็กหญิงกลับไปด้วย"], correct:1 }
+        ]
+      },
+      {
+        title:"ทางออกที่หายไป",
+        passage:"เมื่อบ่ายคล้อย เอกตัดสินใจแอบชวนปอนด์หนีออกจากหมู่บ้านก่อนงานเลี้ยงกลางคืนจะเริ่มขึ้น ทั้งคู่แอบเดินย้อนตามเส้นทางเดิมที่เคยเดินเข้ามา แต่กลับพบว่าถนนดินที่เคยเดินผ่านตอนกลางคืนได้หายไปโดยสิ้นเชิง เหลือเพียงป่าทึบขึ้นปกคลุมพื้นที่นั้นราวกับไม่เคยมีทางเดินอยู่เลย ทั้งคู่พยายามเดินหาทางออกไปในทิศทางต่าง ๆ นานกว่าสองชั่วโมงแต่กลับวนเวียนมาโผล่ที่ต้นไทรใหญ่กลางหมู่บ้านซ้ำแล้วซ้ำเล่าทุกครั้งไม่ว่าจะเลือกเดินไปทางใด จนเมื่อฟ้าเริ่มมืดลงอีกครั้ง ตาผลก็เดินมาพบทั้งคู่พอดีที่ต้นไทร พร้อมพูดด้วยรอยยิ้มเรียบเฉยว่า 'หมู่บ้านเราไม่เคยปล่อยแขกกลับก่อนงานเลี้ยงจะจบหรอกนะ ยังไงก็ต้องเจอกันที่โต๊ะพรุ่งนี้อยู่ดี' ก่อนจะเดินนำทั้งคู่กลับเข้าหมู่บ้านโดยไม่ให้โอกาสปฏิเสธ",
+        questions:[
+          { q:"เอกชวนปอนด์ทำอะไรตอนบ่ายคล้อย", options:["ไปสำรวจต้นไทร","แอบหนีออกจากหมู่บ้านก่อนงานเลี้ยงกลางคืนจะเริ่ม","ไปขอความช่วยเหลือจากตาผล","ไปนอนพักผ่อน"], correct:1 },
+          { q:"ทั้งคู่พบว่าถนนดินที่เคยเดินเข้ามาเป็นอย่างไร", options:["ถูกน้ำท่วม","หายไปโดยสิ้นเชิง เหลือเพียงป่าทึบ","แคบลงกว่าเดิม","มีรถจอดขวางอยู่"], correct:1 },
+          { q:"ทั้งคู่พยายามหาทางออกนานเท่าใด", options:["ประมาณสิบนาที","กว่าสองชั่วโมง","ทั้งคืน","ไม่ถึงห้านาที"], correct:1 },
+          { q:"ไม่ว่าจะเดินไปทางใด ทั้งคู่วนกลับมาที่ใดซ้ำ ๆ", options:["บ้านที่พักคืนแรก","ต้นไทรใหญ่กลางหมู่บ้าน","บ่อน้ำหน้าหมู่บ้าน","ป้ายทางเข้าหมู่บ้าน"], correct:1 },
+          { q:"ตาผลพูดว่าอย่างไรเมื่อพบทั้งคู่อีกครั้ง", options:["'ขอโทษที่ทำให้หลงทาง'","'หมู่บ้านเราไม่เคยปล่อยแขกกลับก่อนงานเลี้ยงจะจบหรอกนะ'","'พรุ่งนี้จะพาไปส่งเอง'","'อย่าเดินออกจากบ้านอีกนะ'"], correct:1 }
+        ]
+      },
+      {
+        title:"ผู้มาเยือนคนใหม่",
+        passage:"เมื่อค่ำลง ชาวบ้านทุกคนพากันมานั่งรายล้อมโต๊ะยาวกลางลานพร้อมกัน แต่ละคนมีจานเปล่าวางอยู่ตรงหน้าเหมือนที่ปอนด์เคยเห็นตอนกลางวัน ตาผลเชิญให้เอกและปอนด์นั่งที่หัวโต๊ะซึ่งเป็นตำแหน่งเดียวที่มีจานว่างเว้นไว้พอดีสองใบ เมื่อโคมไฟกระดาษทุกดวงถูกจุดขึ้นพร้อมกัน เสียงสวดที่ไม่ใช่ภาษาใดที่ทั้งคู่เคยได้ยินก็ดังขึ้นพร้อมกันจากทุกปากของชาวบ้าน หมอกหนาเริ่มไหลเข้ามาปกคลุมลานดินจนมองไม่เห็นสิ่งใดอีก เช้าวันรุ่งขึ้น ตำรวจทางหลวงพบรถของเอกจอดสนิทอยู่ริมถนนสายเก่าใกล้ป่าโดยไม่มีร่องรอยของทั้งคู่หลงเหลืออยู่เลย มีเพียงบันทึกในสมุดโน้ตของปอนด์ที่เขียนไว้บรรทัดสุดท้ายว่า หมู่บ้านไพรงามต้อนรับแขกใหม่ทุกร้อยวัน และคืนถัดจากคืนที่รถของเอกถูกพบนั้น ก็เป็นเวลาครบรอบหนึ่งร้อยวันพอดีนับจากคืนที่ทั้งคู่มาถึงหมู่บ้านเป็นครั้งแรก",
+        questions:[
+          { q:"ตาผลเชิญให้เอกและปอนด์นั่งที่ตำแหน่งใดของโต๊ะ", options:["ท้ายโต๊ะ","หัวโต๊ะซึ่งมีจานว่างเว้นไว้พอดีสองใบ","ข้างตาผล","ใกล้ต้นไทร"], correct:1 },
+          { q:"เกิดอะไรขึ้นเมื่อโคมไฟกระดาษทุกดวงถูกจุดขึ้นพร้อมกัน", options:["ทุกคนเงียบสนิท","เสียงสวดภาษาที่ไม่คุ้นเคยดังขึ้นพร้อมกันจากทุกปาก","ฝนเริ่มตกลงมา","ไฟทุกดวงดับพร้อมกัน"], correct:1 },
+          { q:"เช้าวันรุ่งขึ้นตำรวจทางหลวงพบอะไร", options:["หมู่บ้านทั้งหมู่บ้าน","รถของเอกจอดสนิทอยู่ริมถนนสายเก่าโดยไม่มีร่องรอยของทั้งคู่","เสื้อผ้าของทั้งคู่กองอยู่","ทั้งคู่นอนหมดสติอยู่ริมทาง"], correct:1 },
+          { q:"บันทึกบรรทัดสุดท้ายในสมุดโน้ตของปอนด์เขียนว่าอย่างไร", options:["'ช่วยด้วย'","หมู่บ้านไพรงามต้อนรับแขกใหม่ทุกร้อยวัน","'อย่าตามหาเรา'","'รถเสียกลางทาง'"], correct:1 },
+          { q:"คืนถัดจากคืนที่พบรถของเอกตรงกับเหตุการณ์ใด", options:["วันเกิดของปอนด์","ครบรอบหนึ่งร้อยวันนับจากคืนที่ทั้งคู่มาถึงหมู่บ้านเป็นครั้งแรก","วันหยุดราชการ","วันที่ฝนตกหนักที่สุดในรอบปี"], correct:1 }
+        ]
+      }
+    ]
+  },
+  {
+    key:"hor_underhouse", categoryKey:"horror", title:"เสียงเคาะใต้ถุนบ้าน (สยองขวัญรายตอน)", color:"#6E2020",
+    chapters:[
+      {
+        title:"บ้านมรดกจากย่าทวด",
+        passage:"ครอบครัวของภูมิได้รับมรดกเป็นบ้านไม้ใต้ถุนสูงหลังใหญ่ริมคลองที่ย่าทวดทิ้งไว้ให้หลังจากท่านเสียชีวิตไปนานหลายปีโดยไม่มีใครในครอบครัวกล้าเข้าไปอยู่อาศัยมาก่อน พ่อของภูมิตัดสินใจย้ายทั้งครอบครัวเข้าไปอยู่บ้านหลังนี้เพื่อประหยัดค่าเช่า ทั้งที่แม่ของภูมิคัดค้านอยู่บ้างเพราะเคยได้ยินญาติผู้ใหญ่พูดถึงบ้านหลังนี้ในทำนองไม่ค่อยดีนัก คืนแรกที่ย้ายเข้ามา ภูมิและน้องชายวัยแปดขวบชื่อบอยถูกจัดให้นอนห้องเดียวกันชั้นบน ก่อนนอนบอยถามภูมิว่าทำไมใต้ถุนบ้านถึงถูกล้อมด้วยรั้วไม้ไผ่สูงจนมองไม่เห็นด้านในเลย ทั้งที่บ้านใต้ถุนสูงหลังอื่นแถวนั้นเปิดโล่งกันทั้งหมด ภูมิตอบไปตามที่พ่อเคยบอกไว้เพียงสั้น ๆ ว่าย่าทวดสั่งเอาไว้ก่อนเสียชีวิตว่าห้ามใครรื้อรั้วนั้นออกโดยเด็ดขาด",
+        questions:[
+          { q:"ครอบครัวของภูมิได้รับมรดกเป็นอะไร", options:["ที่ดินเปล่า","บ้านไม้ใต้ถุนสูงหลังใหญ่ริมคลองจากย่าทวด","เงินสดจำนวนมาก","ร้านค้าเก่า"], correct:1 },
+          { q:"เหตุใดพ่อของภูมิจึงตัดสินใจย้ายเข้าไปอยู่บ้านหลังนี้", options:["ต้องการอยู่ใกล้ญาติ","เพื่อประหยัดค่าเช่า","บ้านเดิมถูกไฟไหม้","ต้องการปรับปรุงขาย"], correct:1 },
+          { q:"น้องชายของภูมิชื่ออะไรและอายุเท่าไร", options:["บอย อายุแปดขวบ","เต้ อายุหกขวบ","อ้น อายุสิบขวบ","นิว อายุเจ็ดขวบ"], correct:0 },
+          { q:"บอยสงสัยอะไรเกี่ยวกับใต้ถุนบ้าน", options:["ทำไมใต้ถุนถึงมืดมาก","ทำไมใต้ถุนบ้านถูกล้อมด้วยรั้วไม้ไผ่สูงจนมองไม่เห็นด้านใน","ทำไมใต้ถุนมีน้ำท่วมขัง","ทำไมไม่มีบันไดลงใต้ถุน"], correct:1 },
+          { q:"ย่าทวดสั่งไว้ก่อนเสียชีวิตว่าอย่างไร", options:["ห้ามขายบ้านหลังนี้","ห้ามใครรื้อรั้วไม้ไผ่ใต้ถุนบ้านออกโดยเด็ดขาด","ห้ามใครนอนชั้นบน","ห้ามปลูกต้นไม้ริมคลอง"], correct:1 }
+        ]
+      },
+      {
+        title:"เสียงเคาะใต้ถุน",
+        passage:"คืนที่สามในบ้านใหม่ ภูมิสะดุ้งตื่นขึ้นกลางดึกเพราะเสียงเคาะไม้ดังเป็นจังหวะสม่ำเสมอดังขึ้นจากใต้พื้นห้องนอน เหมือนมีใครใช้ไม้ทุบพื้นใต้ถุนขึ้นมาสามครั้งแล้วเว้นจังหวะ ก่อนจะเคาะซ้ำอีกสามครั้งวนไปเรื่อย ๆ ไม่หยุด เขามองไปที่นาฬิกาบนโต๊ะข้างเตียงพบว่าเป็นเวลาตีสามตรงพอดี บอยที่นอนข้าง ๆ ตื่นขึ้นมาด้วยเช่นกันและกระซิบถามพี่ชายด้วยเสียงสั่นว่านั่นคือเสียงอะไร ภูมิลุกไปปลุกพ่อให้มาฟังด้วย แต่พ่อกลับบอกว่าไม่ได้ยินเสียงใดผิดปกติเลย ทั้งที่เสียงเคาะนั้นยังคงดังสม่ำเสมออยู่ต่อหน้าเขาทุกคน เสียงเคาะหยุดลงพอดีเมื่อนาฬิกาบนโต๊ะเปลี่ยนเป็นเวลาตีสามสามสิบเก้านาที และไม่ดังขึ้นอีกเลยจนกระทั่งรุ่งเช้า",
+        questions:[
+          { q:"เสียงเคาะไม้ดังขึ้นเป็นจังหวะแบบใด", options:["เคาะรัวไม่หยุด","เคาะสามครั้งแล้วเว้นจังหวะ ก่อนเคาะซ้ำอีกสามครั้งวนไปเรื่อย ๆ","เคาะครั้งเดียวแล้วเงียบ","เคาะเบา ๆ ต่อเนื่องไม่มีจังหวะ"], correct:1 },
+          { q:"เสียงเคาะเริ่มดังขึ้นตอนกี่โมง", options:["เที่ยงคืนตรง","ตีสามตรง","ตีห้า","ตีหนึ่ง"], correct:1 },
+          { q:"พ่อของภูมิบอกว่าอย่างไรเมื่อถูกปลุกมาฟังเสียง", options:["บอกว่าเป็นเสียงลม","ไม่ได้ยินเสียงใดผิดปกติเลย","บอกว่าจะไปดูใต้ถุน","ตกใจและรีบวิ่งหนี"], correct:1 },
+          { q:"เสียงเคาะหยุดลงตอนกี่โมง", options:["ตีสามสามสิบเก้านาที","ตีสี่ตรง","เที่ยงคืนครึ่ง","ตีสองสามสิบนาที"], correct:0 },
+          { q:"ใครกระซิบถามภูมิด้วยเสียงสั่นว่าเสียงนั้นคืออะไร", options:["แม่","บอย","พ่อ","ป้าแก้ว"], correct:1 }
+        ]
+      },
+      {
+        title:"ตุ่มน้ำเก่าใต้บ้าน",
+        passage:"วันรุ่งขึ้น ภูมิแอบปีนข้ามรั้วไม้ไผ่เข้าไปสำรวจใต้ถุนบ้านทั้งที่รู้ว่าย่าทวดเคยสั่งห้ามไว้ เขาพบว่าใต้ถุนมีตุ่มน้ำดินเผาขนาดใหญ่ใบหนึ่งตั้งอยู่กลางพื้นที่ ปิดฝาด้วยแผ่นไม้เก่าที่มีเชือกป่านมัดไขว้กันแน่นหนาผิดปกติราวกับตั้งใจไม่ให้ใครเปิดออกได้ง่าย ๆ รอบตุ่มมีเศษข้าวสารและดอกไม้แห้งกระจายอยู่เป็นวงกลม เหมือนเคยมีคนมาทำพิธีบางอย่างไว้ที่นี่เป็นประจำ ภูมิลองเคาะตุ่มดูเบา ๆ ด้วยความอยากรู้ ได้ยินเสียงก้องกลวงราวกับข้างในไม่มีน้ำอยู่เลย แต่ทันทีที่มือของเขาแตะที่ฝาไม้ปิดตุ่ม เขารู้สึกเหมือนมีบางอย่างเคลื่อนไหวอยู่ข้างในกระแทกฝาไม้กลับขึ้นมาเบา ๆ จนภูมิรีบชักมือหนีและรีบปีนกลับออกมาโดยไม่กล้าเข้าไปดูอีก",
+        questions:[
+          { q:"ภูมิพบอะไรอยู่กลางพื้นที่ใต้ถุนบ้าน", options:["บ่อน้ำเก่า","ตุ่มน้ำดินเผาขนาดใหญ่","หีบไม้เก่า","หลุมดิน"], correct:1 },
+          { q:"ฝาตุ่มถูกปิดไว้อย่างไร", options:["ปิดด้วยฝาปูนซีเมนต์","ปิดด้วยแผ่นไม้เก่าที่มีเชือกป่านมัดไขว้กันแน่นหนา","ปิดด้วยฝาสังกะสี","ไม่ได้ปิดฝาไว้เลย"], correct:1 },
+          { q:"รอบตุ่มมีอะไรกระจายอยู่เป็นวงกลม", options:["เกลือ","เศษข้าวสารและดอกไม้แห้ง","เศษกระดาษเงินกระดาษทอง","ขี้เถ้าธูป"], correct:1 },
+          { q:"ภูมิได้ยินเสียงแบบใดเมื่อเคาะตุ่มดู", options:["เสียงน้ำกระฉอก","เสียงก้องกลวงราวกับข้างในไม่มีน้ำ","เสียงแตกร้าว","ไม่มีเสียงใดเลย"], correct:1 },
+          { q:"เกิดอะไรขึ้นทันทีที่ภูมิแตะฝาไม้ปิดตุ่ม", options:["ฝาตุ่มหลุดออกทันที","รู้สึกเหมือนมีบางอย่างเคลื่อนไหวข้างในกระแทกฝาไม้กลับขึ้นมา","ได้ยินเสียงร้องเพลง","มีกลิ่นธูปลอยออกมา"], correct:1 }
+        ]
+      },
+      {
+        title:"คำเตือนจากคนเฒ่า",
+        passage:"ภูมิตัดสินใจไปหาป้าแก้วซึ่งเป็นน้องสาวคนสุดท้องของย่าทวดที่ยังมีชีวิตอยู่และอาศัยอยู่ไม่ไกลจากบ้าน เพื่อถามเรื่องตุ่มน้ำใต้ถุนบ้าน ป้าแก้วหน้าซีดทันทีที่ได้ยินคำถามและรีบถามกลับว่าใครเป็นคนเปิดรั้วเข้าไปดู ก่อนจะเล่าด้วยน้ำเสียงสั่นเครือว่าตุ่มใบนั้นเป็นที่เก็บกระดูกของลูกคนที่สามของย่าทวดซึ่งเสียชีวิตตั้งแต่ยังเป็นทารกในสมัยที่ยังหาหมอไม่ทัน ย่าทวดเชื่อว่าดวงวิญญาณของเด็กคนนั้นยังผูกพันอยู่กับบ้านและไม่ยอมไปไหน จึงทำพิธีฝังกระดูกไว้ใต้ถุนบ้านพร้อมสั่งเสียลูกหลานทุกคนว่าต้องทำบุญเซ่นไหว้ตุ่มนั้นเป็นประจำทุกเดือนเพื่อปลอบขวัญ แต่หลังจากย่าทวดเสียชีวิตไป ไม่มีใครในครอบครัวทำพิธีนี้ต่ออีกเลยนานกว่าสิบปีแล้ว ป้าแก้วกำชับให้ภูมิรีบกลับไปบอกพ่อให้จัดพิธีเซ่นไหว้โดยด่วนที่สุด",
+        questions:[
+          { q:"ป้าแก้วเป็นใครของย่าทวด", options:["ลูกสาวคนโต","น้องสาวคนสุดท้อง","หลานสาว","เพื่อนบ้าน"], correct:1 },
+          { q:"ตุ่มใบนั้นเป็นที่เก็บอะไร", options:["เงินทองที่ฝังไว้","กระดูกของลูกคนที่สามของย่าทวดที่เสียชีวิตตั้งแต่เป็นทารก","เอกสารสำคัญของตระกูล","ของใช้ส่วนตัวของย่าทวด"], correct:1 },
+          { q:"ย่าทวดเชื่อว่าดวงวิญญาณของเด็กคนนั้นเป็นอย่างไร", options:["ไปเกิดใหม่แล้ว","ยังผูกพันอยู่กับบ้านและไม่ยอมไปไหน","ขึ้นสวรรค์ไปแล้ว","ไม่มีใครทราบ"], correct:1 },
+          { q:"ย่าทวดสั่งเสียลูกหลานให้ทำอะไรเป็นประจำทุกเดือน", options:["ทำความสะอาดใต้ถุนบ้าน","ทำบุญเซ่นไหว้ตุ่มนั้นเพื่อปลอบขวัญ","เปลี่ยนรั้วไม้ไผ่ใหม่","สวดมนต์ในบ้านทุกคืน"], correct:1 },
+          { q:"ไม่มีใครทำพิธีเซ่นไหว้ต่อมานานเท่าใดแล้ว", options:["นานกว่าสิบปี","สามปี","ห้าปี","ยี่สิบปี"], correct:0 }
+        ]
+      },
+      {
+        title:"น้องชายหายตัว",
+        passage:"คืนถัดมา ก่อนจะทันได้บอกพ่อเรื่องพิธีเซ่นไหว้ตามที่ป้าแก้วกำชับไว้ ภูมิตื่นขึ้นกลางดึกแล้วพบว่าเตียงข้าง ๆ ของบอยว่างเปล่า ผ้าห่มถูกดึงลงกองอยู่บนพื้นราวกับมีคนรีบลุกขึ้นอย่างกะทันหัน เขารีบวิ่งไปปลุกพ่อกับแม่ให้ช่วยกันตามหาทั่วบ้านแต่ไม่พบบอยในห้องใดเลย จนกระทั่งแม่ของภูมิได้ยินเสียงหัวเราะเบา ๆ ดังมาจากใต้ถุนบ้าน ทุกคนรีบวิ่งลงไปดูด้วยไฟฉายและพบว่ารั้วไม้ไผ่ที่เคยปิดล้อมแน่นหนาถูกดึงออกเป็นช่องพอให้เด็กตัวเล็กลอดผ่านเข้าไปได้ ภายในแสงไฟฉายส่องไปเห็นบอยนั่งอยู่ข้างตุ่มน้ำเก่าโดยกำลังพูดคุยยิ้มร่าอยู่กับความว่างเปล่าตรงหน้าตัวเองราวกับมีใครนั่งอยู่ตรงนั้นจริง ๆ เมื่อภูมิเข้าไปดึงตัวบอยออกมา น้องชายกลับมองหน้าเขาด้วยแววตาที่ไม่ใช่แววตาเดิมที่ภูมิคุ้นเคยเลย",
+        questions:[
+          { q:"ภูมิตื่นขึ้นมาแล้วพบว่าเตียงของบอยเป็นอย่างไร", options:["มีบอยนอนหลับอยู่ปกติ","ว่างเปล่า ผ้าห่มถูกดึงลงกองอยู่บนพื้น","เปียกน้ำทั้งเตียง","ถูกจัดเก็บเรียบร้อย"], correct:1 },
+          { q:"แม่ของภูมิได้ยินเสียงอะไรดังมาจากใต้ถุนบ้าน", options:["เสียงร้องไห้","เสียงหัวเราะเบา ๆ","เสียงเคาะประตู","เสียงเรียกชื่อภูมิ"], correct:1 },
+          { q:"ทุกคนพบว่ารั้วไม้ไผ่เป็นอย่างไร", options:["ถูกทุบพังทั้งแนว","ถูกดึงออกเป็นช่องพอให้เด็กตัวเล็กลอดผ่านเข้าไปได้","ยังปิดสนิทเหมือนเดิม","ถูกเผาไหม้บางส่วน"], correct:1 },
+          { q:"บอยกำลังทำอะไรอยู่ข้างตุ่มน้ำเก่า", options:["นอนหลับอยู่","พูดคุยยิ้มร่าอยู่กับความว่างเปล่าตรงหน้าตัวเอง","ร้องไห้เสียงดัง","พยายามเปิดฝาตุ่ม"], correct:1 },
+          { q:"เมื่อภูมิดึงตัวบอยออกมา น้องชายมองเขาด้วยแววตาแบบใด", options:["แววตาปกติที่คุ้นเคย","แววตาที่ไม่ใช่แววตาเดิมที่ภูมิคุ้นเคย","แววตาง่วงนอน","แววตาดีใจที่เจอพี่ชาย"], correct:1 }
+        ]
+      },
+      {
+        title:"พิธีขอขมา",
+        passage:"รุ่งเช้า พ่อของภูมิตัดสินใจเชื่อคำเตือนของป้าแก้วอย่างจริงจังเป็นครั้งแรก และรีบนิมนต์พระและเชิญหมอผีในหมู่บ้านมาทำพิธีขอขมาและเซ่นไหว้ตุ่มใต้ถุนบ้านโดยด่วนที่สุด ตลอดพิธีบอยนั่งซึมเงียบผิดปกติอยู่ข้างพ่อแม่โดยไม่พูดอะไรเลยแม้แต่คำเดียว หมอผีจุดธูปเทียนพร้อมกล่าวคำขอขมาต่อดวงวิญญาณเด็กในตุ่ม และเทน้ำมนต์รอบบริเวณใต้ถุนจนทั่ว ทุกอย่างดูราวกับจะผ่านไปด้วยดีจนกระทั่งช่วงท้ายพิธี เมื่อหมอผีกำลังจะมัดเชือกป่านรอบตุ่มให้แน่นดังเดิม จู่ ๆ บอยก็ลุกขึ้นวิ่งเข้าไปกอดตุ่มพร้อมร้องไห้เสียงดังและพูดด้วยน้ำเสียงที่ไม่ใช่เสียงเด็กแปดขวบว่า 'อย่าปิดฉันไว้อีกเลยนะ ฉันเหงามานานมากแล้ว' ก่อนจะล้มลงสลบไปต่อหน้าทุกคน",
+        questions:[
+          { q:"พ่อของภูมิทำอะไรหลังเชื่อคำเตือนของป้าแก้วอย่างจริงจัง", options:["ทุบตุ่มทิ้ง","นิมนต์พระและเชิญหมอผีมาทำพิธีขอขมาและเซ่นไหว้ตุ่ม","ย้ายบ้านทันที","ถมใต้ถุนบ้านด้วยปูน"], correct:1 },
+          { q:"ตลอดพิธี บอยมีอาการอย่างไร", options:["ร่าเริงเป็นปกติ","นั่งซึมเงียบผิดปกติโดยไม่พูดอะไรเลย","วิ่งเล่นรอบบ้าน","ร้องขอกลับเข้าไปนอน"], correct:1 },
+          { q:"หมอผีทำอะไรรอบบริเวณใต้ถุนบ้าน", options:["โปรยดอกไม้","เทน้ำมนต์รอบบริเวณใต้ถุนจนทั่ว","จุดพลุ","ขึงตาข่ายป้องกัน"], correct:1 },
+          { q:"บอยลุกขึ้นทำอะไรในช่วงท้ายพิธี", options:["วิ่งหนีออกจากบ้าน","วิ่งเข้าไปกอดตุ่มพร้อมร้องไห้เสียงดัง","หัวเราะเสียงดัง","ขอน้ำดื่ม"], correct:1 },
+          { q:"บอยพูดประโยคใดด้วยน้ำเสียงที่ไม่ใช่เสียงเด็กแปดขวบ", options:["'ขอบคุณที่มาช่วย'","'อย่าปิดฉันไว้อีกเลยนะ ฉันเหงามานานมากแล้ว'","'หนูอยากกลับบ้าน'","'อย่าทำร้ายฉัน'"], correct:1 }
+        ]
+      },
+      {
+        title:"สิ่งที่ขึ้นมาจากใต้ถุน",
+        passage:"หลังบอยล้มสลบไปต่อหน้าทุกคน หมอผีรีบสั่งให้ทุกคนถอยห่างจากตุ่มทันทีพร้อมกล่าวว่าพิธีขอขมาไม่สำเร็จเสียแล้ว เพราะดวงวิญญาณเด็กที่อยู่ในตุ่มไม่ต้องการคำขอขมาอีกต่อไป แต่ต้องการมีเพื่อนเล่นอยู่ด้วยตลอดไปต่างหาก ทันใดนั้นฝาไม้ปิดตุ่มก็กระเด็นหลุดออกด้วยแรงบางอย่างจากข้างในจนทุกคนต้องวิ่งหนีขึ้นบ้านกันชุลมุน พ่อของภูมิอุ้มบอยที่ยังสลบวิ่งขึ้นบันไดเป็นคนสุดท้าย และรู้สึกเหมือนมีมือเล็ก ๆ เย็นเฉียบมาจับข้อเท้าเขาไว้แวบหนึ่งก่อนจะหลุดไปเอง หลังจากคืนนั้น ครอบครัวของภูมิย้ายออกจากบ้านหลังนั้นทันทีโดยไม่กลับไปอีกเลย แต่ทุกคืนนับจากนั้นบอยยังคงตื่นขึ้นกลางดึกเป็นประจำพร้อมพูดกับความมืดในห้องว่า 'เดี๋ยวพรุ่งนี้ไปเล่นด้วยกันอีกนะ' ทั้งที่ไม่มีใครในห้องนอกจากตัวเขาเอง",
+        questions:[
+          { q:"หมอผีบอกว่าเหตุใดพิธีขอขมาจึงไม่สำเร็จ", options:["เพราะทำพิธีผิดขั้นตอน","เพราะดวงวิญญาณเด็กไม่ต้องการคำขอขมา แต่ต้องการมีเพื่อนเล่นอยู่ด้วยตลอดไป","เพราะฝนตกระหว่างพิธี","เพราะพระมาช้าเกินไป"], correct:1 },
+          { q:"เกิดอะไรขึ้นกับฝาไม้ปิดตุ่มทันทีหลังจากนั้น", options:["ยังคงปิดสนิทเหมือนเดิม","กระเด็นหลุดออกด้วยแรงบางอย่างจากข้างใน","ถูกหมอผีเผาทิ้ง","แตกเป็นเสี่ยง ๆ"], correct:1 },
+          { q:"พ่อของภูมิรู้สึกอะไรที่ข้อเท้าขณะวิ่งขึ้นบันได", options:["เหมือนมีน้ำเย็นราดใส่","เหมือนมีมือเล็ก ๆ เย็นเฉียบมาจับข้อเท้าไว้แวบหนึ่ง","เหมือนถูกงูรัด","ไม่รู้สึกอะไรเลย"], correct:1 },
+          { q:"หลังจากคืนนั้นครอบครัวของภูมิทำอะไร", options:["ทำพิธีเซ่นไหว้ซ้ำอีกครั้ง","ย้ายออกจากบ้านหลังนั้นทันทีโดยไม่กลับไปอีกเลย","ถมตุ่มด้วยปูนซีเมนต์","อยู่ต่อโดยล็อกรั้วให้แน่นขึ้น"], correct:1 },
+          { q:"บอยยังคงพูดอะไรกับความมืดในห้องทุกคืนนับจากนั้น", options:["'อย่ามาอีกนะ'","'เดี๋ยวพรุ่งนี้ไปเล่นด้วยกันอีกนะ'","'ขอบคุณที่ช่วยหนู'","'หนูกลัวมาก'"], correct:1 }
+        ]
+      }
+    ]
+  }
+
+];
+
+
+const checkSvg = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#2A1D12" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+/* ===================================================================
+   CONTENT LOADING (books + rewards catalog) FROM FIRESTORE
+   ทั้งหนังสือและรางวัลตอนนี้จัดการได้ผ่านหน้าแอดมิน (admin.html) โดยไม่ต้อง
+   แก้โค้ดเลย - ข้อมูลจริงเก็บอยู่ใน Firestore:
+     - collection "content"        -> หนังสือแต่ละเล่ม (เอกสาร id = book key)
+     - collection "rewardsCatalog" -> รางวัลแต่ละชิ้น (เอกสาร id = reward key)
+   ถ้า Firestore ยังไม่มีข้อมูลเลย (ยังไม่เคย seed) หรือเชื่อมต่อไม่ได้ ระบบจะ
+   ใช้ค่าเริ่มต้นจาก DEFAULT_BOOKS / DEFAULT_REWARDS แทนไปก่อน เพื่อไม่ให้หน้า
+   เว็บพังหรือว่างเปล่า
+=================================================================== */
+let books = [];
+let rewards = [];
+
+async function loadContentFromFirestore(){
+  try{
+    const snap = await db.collection('content').orderBy('order').get();
+    books = snap.empty ? DEFAULT_BOOKS : snap.docs.map(d => ({ key: d.id, ...d.data() }));
+  }catch(err){
+    console.warn("loadContentFromFirestore(books) error:", err);
+    books = DEFAULT_BOOKS;
+  }
+
+  try{
+    const snap = await db.collection('rewardsCatalog').orderBy('order').get();
+    rewards = snap.empty ? DEFAULT_REWARDS : snap.docs.map(d => ({ key: d.id, ...d.data() }));
+  }catch(err){
+    console.warn("loadContentFromFirestore(rewards) error:", err);
+    rewards = DEFAULT_REWARDS;
+  }
+}
+
+/* ===================================================================
+   นำเข้าข้อมูลเริ่มต้นเข้า Firestore (ทำครั้งเดียว)
+   ใช้ตอนเริ่มระบบจัดการเนื้อหาแบบไม่ต้องแก้โค้ด (admin.html) ครั้งแรกเท่านั้น
+   วิธีใช้: ล็อกอินเข้าหน้านี้ (index.html) ด้วยบัญชีแอดมินตามปกติก่อน แล้วเปิด
+   Console ของเบราว์เซอร์ (กด F12 แล้วไปแท็บ Console) พิมพ์คำสั่ง
+       seedContentToFirestore()
+   แล้วกด Enter หนึ่งครั้ง จะคัดลอกหนังสือ 36 เล่ม + รางวัลทั้งหมดที่เคยฝังไว้
+   ในโค้ดเข้า Firestore ให้อัตโนมัติ หลังจากนั้นให้ไปจัดการ (แก้ไข/เพิ่ม/ลบ)
+   ต่อได้ที่หน้า admin.html แทน ไม่ต้องรันคำสั่งนี้ซ้ำอีก (รันซ้ำได้ไม่พัง แต่จะ
+   เขียนทับของเดิมด้วยรหัสเดียวกัน ไม่ใช่การเพิ่มซ้ำ)
+=================================================================== */
+window.seedContentToFirestore = async function(){
+  if(!currentUserDocRef){
+    console.warn("ยังไม่ได้ล็อกอิน กรุณาล็อกอินด้วยบัญชีแอดมินก่อน");
+    return;
+  }
+  console.log("กำลังนำเข้าข้อมูล... กรุณารอสักครู่");
+  try{
+    const batch = db.batch();
+    DEFAULT_BOOKS.forEach((b, i)=>{
+      const ref = db.collection('content').doc(b.key);
+      const data = { categoryKey: b.categoryKey, title: b.title, color: b.color, order: i };
+      if(b.chapters){
+        data.chapters = b.chapters.map(ch=>({ title: ch.title, passage: ch.passage, questions: ch.questions }));
+      } else {
+        data.passage = b.passage;
+        data.questions = b.questions;
+      }
+      batch.set(ref, data);
+    });
+    DEFAULT_REWARDS.forEach((r, i)=>{
+      const ref = db.collection('rewardsCatalog').doc(r.key);
+      batch.set(ref, { title: r.title, cost: r.cost, color: r.color, img: r.img || "", order: i });
+    });
+    await batch.commit();
+    console.log(`✅ นำเข้าสำเร็จ: หนังสือ ${DEFAULT_BOOKS.length} เล่ม, รางวัล ${DEFAULT_REWARDS.length} ชิ้น เข้า Firestore แล้ว ไปจัดการต่อได้ที่ admin.html`);
+  }catch(err){
+    console.error("นำเข้าไม่สำเร็จ:", err);
+    console.log("ถ้าเห็นคำว่า permission-denied แปลว่าต้องเพิ่ม Firestore Security Rules ให้ collection content / rewardsCatalog ก่อน");
+  }
+};
+
+/* ===================================================================
+   MULTI-CHAPTER BOOKS
+   A book with a "chapters" array is treated internally as a set of
+   independent "reading units", one per chapter, each with its own key
+   (bookKey + "__chN"). This lets every existing piece of state/points
+   logic (state{}, attempts{}, progress in Firestore, saveQuizResultRemote,
+   the ready/quiz/result modals) work completely unchanged - they just
+   operate on chapter keys instead of book keys when relevant.
+=================================================================== */
+function chapterKey(bookKey, idx){ return `${bookKey}__ch${idx+1}`; }
+
+function parseChapterKey(key){
+  const m = /^(.+)__ch(\d+)$/.exec(key);
+  if(!m) return null;
+  return { bookKey: m[1], chapterIdx: parseInt(m[2], 10) - 1 };
+}
+
+/* Resolves either a plain book key or a chapter key into one common
+   shape ({ title, passage, questions, categoryKey, ... }) so openModal /
+   startQuiz / the submit handler don't need to care which one it is. */
+function getUnit(key){
+  const parsed = parseChapterKey(key);
+  if(parsed){
+    const book = books.find(x=> x.key === parsed.bookKey);
+    if(!book || !book.chapters) return null;
+    const ch = book.chapters[parsed.chapterIdx];
+    if(!ch) return null;
+    return {
+      key,
+      title: `${book.title} • ตอนที่ ${parsed.chapterIdx+1}: ${ch.title}`,
+      passage: ch.passage,
+      questions: ch.questions,
+      categoryKey: book.categoryKey,
+      isChapter: true,
+      parentBookKey: book.key,
+      chapterIdx: parsed.chapterIdx
+    };
+  }
+  const book = books.find(x=> x.key === key);
+  if(!book) return null;
+  return {
+    key,
+    title: book.title,
+    passage: book.passage,
+    questions: book.questions,
+    categoryKey: book.categoryKey,
+    isChapter: false
+  };
+}
+
+/* state[key] = "done" | "unread" - key is a book key, or a chapter key
+   (bookKey__chN) for multi-chapter books */
+let state = {};
+function initStateAndAttempts(){
+  books.forEach(b => {
+    if(b.chapters){
+      b.chapters.forEach((ch, idx) => state[chapterKey(b.key, idx)] = "unread");
+    }
+    state[b.key] = "unread";
+  });
+
+  books.forEach(b => {
+    if(b.chapters){
+      b.chapters.forEach((ch, idx) => attempts[chapterKey(b.key, idx)] = 0);
+    }
+    attempts[b.key] = 0;
+  });
+}
+
+/* attempts[key] = number of FAILED tries so far this session */
+const MAX_ATTEMPTS = 3;
+let attempts = {};
+
+/* ---------------- Shelf decoration in header ---------------- */
+function buildShelfDeco(){
+  const wrap = document.getElementById('shelfDeco');
+  wrap.innerHTML = "";
+  const palette = books.map(b=>b.color);
+  for(let i=0;i<14;i++){
+    const s = document.createElement('div');
+    s.className = "spine";
+    s.style.height = (28 + (i % 4) * 7) + "px";
+    s.style.background = palette[i % palette.length];
+    wrap.appendChild(s);
+  }
+}
+
+/* ---------------- Render library ---------------- */
+function render(){
+  const root = document.getElementById('libraryRoot');
+  root.innerHTML = "";
+
+  const doneCount = Object.values(state).filter(s=>s==="done").length;
+  document.getElementById('bookCountText').textContent = `อ่านแล้ว ${doneCount}/${books.length} เล่ม`;
+
+  categories.forEach(cat=>{
+    const catBooks = books.filter(b=>b.categoryKey === cat.key);
+    const catDone = catBooks.filter(b=> state[b.key] === "done").length;
+
+    const section = document.createElement('section');
+    section.className = "shelf-section";
+
+    const headerEl = document.createElement('div');
+    headerEl.className = "shelf-header";
+    headerEl.innerHTML = `
+      <div class="shelf-header-left">
+        <div class="shelf-icon-badge" style="background:${cat.badge}">
+          <svg class="shelf-icon" viewBox="0 0 24 24">${cat.icon}</svg>
+        </div>
+        <h2>${cat.title}</h2>
+      </div>
+      <div class="shelf-count">อ่านแล้ว ${catDone}/${catBooks.length} เล่ม</div>
+    `;
+    section.appendChild(headerEl);
+
+    const row = document.createElement('div');
+    row.className = "shelf-row";
+
+    catBooks.forEach(b=>{
+      const st = state[b.key];
+      const div = document.createElement('div');
+      div.className = `book ${st}`;
+
+      let statusLabel, coverBadge;
+      if(b.chapters){
+        const doneCh = b.chapters.filter((ch, idx)=> state[chapterKey(b.key, idx)] === "done").length;
+        statusLabel = st === "done" ? "อ่านครบแล้ว" : `อ่านแล้ว ${doneCh}/${b.chapters.length} ตอน`;
+        coverBadge = st === "done"
+          ? `<div class="done-badge">${checkSvg.replace('width="30" height="30"','width="14" height="14"')}</div>`
+          : `<div class="chapter-badge">${b.chapters.length} ตอน</div>`;
+      } else {
+        statusLabel = st === "done" ? "อ่านแล้ว" : "ยังไม่ได้อ่าน";
+        coverBadge = st === "done" ? `<div class="done-badge">${checkSvg.replace('width="30" height="30"','width="14" height="14"')}</div>` : "";
+      }
+
+      div.innerHTML = `
+        <div class="book-cover" style="background:${b.color}">
+          ${coverBadge}
+          <div class="book-cover-title">${b.title}</div>
+        </div>
+        <div class="book-title">${b.title}</div>
+        <div class="book-status">${statusLabel}</div>
+      `;
+      div.addEventListener('click', ()=> b.chapters ? openChapterList(b.key) : openModal(b.key));
+      row.appendChild(div);
+    });
+
+    section.appendChild(row);
+
+    const plank = document.createElement('div');
+    plank.className = "shelf-plank";
+    section.appendChild(plank);
+
+    root.appendChild(section);
+  });
+
+  fitCoverTitles();
+  renderRewards();
+}
+
+/* ถ้ารูปจริง (forbook.png / forpen.png / forwrite.png) โหลดไม่ขึ้นด้วยเหตุผล
+   ใดก็ตาม (ยังไม่ได้อัปโหลด, พิมพ์ชื่อไฟล์ผิด, ลบไฟล์ทิ้ง) ให้สลับกลับไปโชว์
+   ไอคอนเส้น SVG เดิมแทน กันไม่ให้การ์ดรางวัลว่างเปล่าดูแปลก ๆ */
+function handleRewardImgError(imgEl, key){
+  const r = rewards.find(x=>x.key === key);
+  const wrap = imgEl.parentElement;
+  const iconDiv = document.createElement('div');
+  iconDiv.className = "reward-icon";
+  iconDiv.style.background = (r && r.color) || "#8a7a5c";
+  iconDiv.innerHTML = (r && r.icon)
+    ? `<svg viewBox="0 0 24 24">${r.icon}</svg>`
+    : `<span style="font-size:24px;line-height:1;">🎁</span>`;
+  wrap.replaceWith(iconDiv);
+}
+
+function renderRewards(){
+  const root = document.getElementById('rewardsSection');
+  root.innerHTML = "";
+
+  const headerEl = document.createElement('div');
+  headerEl.className = "rewards-header";
+  headerEl.innerHTML = `
+    <h2>แลกแต้มเป็นรางวัล</h2>
+    <div class="rewards-header-right">
+      <div class="rewards-sub">แต้มของคุณตอนนี้ ${totalPoints} แต้ม</div>
+      <button class="history-link" id="historyLinkBtn" type="button">ดูประวัติการแลกแต้ม</button>
+    </div>
+  `;
+  root.appendChild(headerEl);
+
+  document.getElementById('historyLinkBtn').addEventListener('click', openRedemptionHistory);
+
+  const row = document.createElement('div');
+  row.className = "rewards-row";
+
+  /* แคตตาล็อกรางวัล: แสดงไอคอน ชื่อ และจำนวนแต้มเท่านั้น ไม่มีปุ่มแลกในการ์ด
+     การแลกรางวัลทั้งหมดทำผ่านปุ่มสแกน QR Code ปุ่มเดียวด้านล่างแทน */
+  rewards.forEach(r=>{
+    const card = document.createElement('div');
+    card.className = "reward-card";
+    const photoHtml = r.img
+      ? `<div class="reward-photo-wrap"><img class="reward-photo" src="${r.img}" alt="${r.title}" onerror="handleRewardImgError(this,'${r.key}')"></div>`
+      : `<div class="reward-icon" style="background:${r.color || '#8a7a5c'}">${r.icon ? `<svg viewBox="0 0 24 24">${r.icon}</svg>` : `<span style="font-size:24px;line-height:1;">🎁</span>`}</div>`;
+    card.innerHTML = `
+      ${photoHtml}
+      <div class="reward-info">
+        <div class="reward-title">${r.title}</div>
+        <div class="reward-cost">${typeof r.cost === "number" ? r.cost + " แต้ม" : r.cost}</div>
+      </div>
+    `;
+    row.appendChild(card);
+  });
+
+  root.appendChild(row);
+
+  const scanCta = document.createElement('div');
+  scanCta.className = "rewards-scan-cta";
+  scanCta.innerHTML = `
+    <button class="btn" id="scanQrBtn" type="button">📷 สแกน QR Code เพื่อแลกรางวัล</button>
+    <p class="rewards-scan-hint">แจ้งเจ้าหน้าที่ว่าต้องการแลกรางวัลชิ้นใด เจ้าหน้าที่จะออก QR Code ให้ตามจำนวนแต้ม จากนั้นกดปุ่มนี้เพื่อสแกนและตัดแต้มอัตโนมัติ</p>
+  `;
+  root.appendChild(scanCta);
+
+  document.getElementById('scanQrBtn').addEventListener('click', openQrScanModal);
+}
+
+function fitCoverTitles(){
+  document.querySelectorAll('.book-cover-title').forEach(el=>{
+    let fontSize = 14;
+    el.style.fontSize = fontSize + "px";
+    while(el.scrollWidth > el.clientWidth && fontSize > 8.5){
+      fontSize -= 0.5;
+      el.style.fontSize = fontSize + "px";
+    }
+  });
+  document.querySelectorAll('.book-title').forEach(el=>{
+    let fontSize = 13.5;
+    el.style.fontSize = fontSize + "px";
+    while(el.scrollWidth > el.clientWidth && fontSize > 8.5){
+      fontSize -= 0.5;
+      el.style.fontSize = fontSize + "px";
+    }
+  });
+}
+
+window.addEventListener('resize', ()=>{
+  clearTimeout(window._fitTitlesTimer);
+  window._fitTitlesTimer = setTimeout(fitCoverTitles, 150);
+});
+
+/* ---------------- Page switching (library <-> rewards) ---------------- */
+const LIBRARY_SUB = "เลือกอ่านเรื่องไหนก่อนก็ได้ ทุกหมวดหมู่เปิดให้อ่านพร้อมกัน ทำแบบทดสอบท้ายเรื่องให้ถูกครบเพื่อรับแต้ม";
+const REWARDS_SUB = "นำแต้มที่สะสมได้จากการอ่านมาแลกเป็นรางวัล และดูประวัติการแลกแต้มของคุณ";
+
+function showPage(page){
+  const isRewards = page === "rewards";
+  document.getElementById('pageLibrary').style.display = isRewards ? "none" : "block";
+  document.getElementById('pageRewards').style.display = isRewards ? "block" : "none";
+  document.getElementById('navToRewardsBtn').style.display = isRewards ? "none" : "inline-flex";
+  document.getElementById('navToLibraryBtn').style.display = isRewards ? "inline-flex" : "none";
+  document.getElementById('headerSub').textContent = isRewards ? REWARDS_SUB : LIBRARY_SUB;
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+
+document.getElementById('navToRewardsBtn').addEventListener('click', ()=> showPage('rewards'));
+document.getElementById('navToLibraryBtn').addEventListener('click', ()=> showPage('library'));
+
+/* ---------------- Login & App Logic ---------------- */
+let currentBookKey = null;
+/* When reading a chapter of a multi-chapter book, this holds the parent
+   book's key so "ปิด" / "ไปต่อ" return to the chapter list instead of
+   closing the overlay entirely. Null for plain single-part books. */
+let chapterListReturnKey = null;
+let userAnswers = [];
+let totalPoints = 0;
+let startTime = 0;
+
+let currentUserName = "";
+
+/* Loads (or creates, first login) this reader's Firestore profile and
+   flips the screen from login -> app content. Shared by password login
+   and by the silent auto-login on page reload. */
+async function enterAppForUser(user, name){
+  currentUserDocRef = db.collection('users').doc(user.uid);
+  let snap = await currentUserDocRef.get();
+
+  if(!snap.exists){
+    await currentUserDocRef.set({
+      name: name,
+      totalPoints: 0,
+      progress: {},
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    snap = await currentUserDocRef.get();
+  }
+
+  const data = snap.data();
+  currentUserName = data.name || name;
+
+  /* บัญชีที่มี field role: "admin" ใน Firestore (ตั้งค่าเองผ่าน Firebase Console)
+     จะถูกพาไปหน้าแผงควบคุมผู้ดูแลระบบแทนหน้าอ่านหนังสือปกติ */
+  if(data.role === "admin"){
+    document.getElementById('loginScreen').style.display = "none";
+    document.getElementById('adminContent').style.display = "block";
+    document.getElementById('adminGreetingText').innerHTML = `เข้าสู่ระบบในฐานะผู้ดูแลระบบ <strong>${currentUserName}</strong> <span class="logout-link" onclick="logoutUser()">ออกจากระบบ</span>`;
+    await loadAdminDashboard();
+    return;
+  }
+
+  totalPoints = data.totalPoints || 0;
+
+  const progress = data.progress || {};
+  books.forEach(b => {
+    if(b.chapters){
+      b.chapters.forEach((ch, idx) => {
+        const chKey = chapterKey(b.key, idx);
+        state[chKey] = progress[chKey] ? "done" : "unread";
+      });
+      state[b.key] = b.chapters.every((ch, idx) => state[chapterKey(b.key, idx)] === "done") ? "done" : "unread";
+    } else {
+      state[b.key] = progress[b.key] ? "done" : "unread";
+    }
+  });
+
+  document.getElementById('loginScreen').style.display = "none";
+  document.getElementById('appContent').style.display = "block";
+  document.getElementById('greetingText').innerHTML = `ยินดีต้อนรับ นักอ่าน <strong>${currentUserName}</strong> <span class="logout-link" onclick="logoutUser()">ออกจากระบบ</span>`;
+  document.getElementById('pointsText').textContent = totalPoints;
+
+  await loadRemoteContent();
+  render();
+}
+
+/* Runs as a Firestore transaction so two devices/tabs finishing a quiz
+   for the same reader at the same moment can never stomp on each
+   other's point total (the exact race that plain Sheet writes can't
+   protect against). Returns the authoritative totalPoints from the
+   server, or null if the write failed (caller falls back to a local
+   optimistic update so the UI still works offline). */
+async function saveQuizResultRemote(bookKey, earnedPoints, passed){
+  if(!currentUserDocRef) return null;
+  try{
+    const newTotal = await db.runTransaction(async (tx)=>{
+      const snap = await tx.get(currentUserDocRef);
+      const data = snap.data() || {};
+      const current = data.totalPoints || 0;
+      const progress = data.progress || {};
+      if(passed) progress[bookKey] = true;
+      const updated = current + earnedPoints;
+      tx.update(currentUserDocRef, { totalPoints: updated, progress });
+      return updated;
+    });
+    return newTotal;
+  }catch(err){
+    console.warn("saveQuizResultRemote error:", err);
+    return null;
+  }
+}
+
+/* Also a transaction: re-checks the reader's points server-side (not
+   just whatever's cached in the browser tab) before deducting, so two
+   tabs/devices can't both redeem past zero. On success also appends a
+   row to the redemptions subcollection for the history view.
+   Returns { ok:true, totalPoints } or { ok:false, totalPoints, message }. */
+async function redeemRewardRemote(rewardKey, rewardTitle, cost){
+  if(!currentUserDocRef) return { ok:false, totalPoints, message:"ยังไม่ได้เข้าสู่ระบบ" };
+  try{
+    const result = await db.runTransaction(async (tx)=>{
+      const snap = await tx.get(currentUserDocRef);
+      const data = snap.data() || {};
+      const current = data.totalPoints || 0;
+      if(current < cost){
+        return { ok:false, totalPoints: current, message:"แต้มไม่พอแล้ว กรุณาลองรางวัลอื่น" };
+      }
+      const updated = current - cost;
+      tx.update(currentUserDocRef, { totalPoints: updated });
+      const redemptionRef = currentUserDocRef.collection('redemptions').doc();
+      tx.set(redemptionRef, {
+        rewardKey, rewardTitle, cost,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        totalPointsAfter: updated
+      });
+      return { ok:true, totalPoints: updated };
+    });
+    return result;
+  }catch(err){
+    console.warn("redeemRewardRemote error:", err);
+    return { ok:false, totalPoints, message:"แลกรางวัลไม่สำเร็จ ลองใหม่อีกครั้ง" };
+  }
+}
+
+/* ===================================================================
+   QR-CODE REDEMPTION
+   Admin generates a one-time code (Firestore doc under "redeemCodes",
+   doc id = the code itself) worth a chosen number of points and shows
+   it as a QR. A reader scans it with their own camera; the code string
+   decoded from the QR is looked up here. peekQrCodeRemote() is a plain
+   read used only to show the confirm dialog ("แลกด้วย X แต้ม?"). The
+   actual deduction happens in redeemByQrCodeRemote(), which re-checks
+   everything (code still unused, reader has enough points) inside one
+   Firestore transaction so the code can never be spent twice even if
+   two readers scan the same QR at nearly the same moment. */
+async function peekQrCodeRemote(code){
+  try{
+    const snap = await db.collection('redeemCodes').doc(code).get();
+    if(!snap.exists) return { ok:false, message:"ไม่พบ QR Code นี้ในระบบ กรุณาขอ QR Code ใหม่จากเจ้าหน้าที่" };
+    const data = snap.data();
+    if(data.used) return { ok:false, message:"QR Code นี้ถูกใช้แลกรางวัลไปแล้ว" };
+    return { ok:true, points: data.points || 0 };
+  }catch(err){
+    console.warn("peekQrCodeRemote error:", err);
+    return { ok:false, message:"ไม่สามารถตรวจสอบ QR Code ได้ กรุณาลองใหม่" };
+  }
+}
+
+async function redeemByQrCodeRemote(code){
+  if(!currentUserDocRef) return { ok:false, message:"ยังไม่ได้เข้าสู่ระบบ" };
+  const codeRef = db.collection('redeemCodes').doc(code);
+  try{
+    const result = await db.runTransaction(async (tx)=>{
+      const codeSnap = await tx.get(codeRef);
+      if(!codeSnap.exists){
+        return { ok:false, message:"ไม่พบ QR Code นี้ในระบบ กรุณาขอ QR Code ใหม่จากเจ้าหน้าที่" };
+      }
+      const codeData = codeSnap.data();
+      if(codeData.used){
+        return { ok:false, message:"QR Code นี้ถูกใช้แลกรางวัลไปแล้ว" };
+      }
+
+      const userSnap = await tx.get(currentUserDocRef);
+      const userData = userSnap.data() || {};
+      const current = userData.totalPoints || 0;
+      const cost = codeData.points || 0;
+      if(current < cost){
+        return { ok:false, totalPoints: current, message:"แต้มของคุณไม่พอสำหรับ QR Code นี้" };
+      }
+
+      const updated = current - cost;
+      tx.update(currentUserDocRef, { totalPoints: updated });
+      tx.update(codeRef, {
+        used:true,
+        usedBy: currentUserDocRef.id,
+        usedByName: currentUserName,
+        usedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      const redemptionRef = currentUserDocRef.collection('redemptions').doc();
+      tx.set(redemptionRef, {
+        rewardTitle: "แลกรางวัลด้วย QR Code", cost,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        totalPointsAfter: updated
+      });
+      return { ok:true, totalPoints: updated, cost };
+    });
+    return result;
+  }catch(err){
+    console.warn("redeemByQrCodeRemote error:", err);
+    return { ok:false, message:"แลกรางวัลไม่สำเร็จ ลองสแกนใหม่อีกครั้ง" };
+  }
+}
+
+/* Set right before we ask Firebase to sign in / register, so the auth
+   state listener below (the single place that calls enterAppForUser)
+   knows what display name to save for a brand-new account. Left null
+   for the silent session-restore-on-reload case, where the profile
+   already exists in Firestore and its saved name is used instead. */
+let pendingLoginName = null;
+
+async function doLogin(name, pass){
+  const errorEl = document.getElementById('loginError');
+  const email = nameToEmail(name);
+  pendingLoginName = name;
+
+  try{
+    try{
+      await auth.createUserWithEmailAndPassword(email, pass);
+      /* ชื่อนี้ยังไม่เคยมีบัญชีมาก่อน - สร้างบัญชีใหม่สำเร็จ (สมัครครั้งแรก) */
+    }catch(err){
+      if(err.code === 'auth/email-already-in-use'){
+        /* กรณีปกติของผู้ใช้เดิม: ชื่อนี้มีบัญชีอยู่แล้ว -> เข้าสู่ระบบด้วยรหัสผ่าน
+           ที่กรอกจริง ๆ (แม่นยำกว่าเดิม เพราะ error ที่ได้จาก signIn ตรงนี้
+           อย่าง wrong-password / invalid-credential ไม่กำกวมเหมือนตอนเช็คจาก
+           createUser อย่างเดียว) */
+        await auth.signInWithEmailAndPassword(email, pass);
+      } else {
+        throw err;
+      }
+    }
+    /* success falls through to auth.onAuthStateChanged, which does the
+       actual screen transition once - see below */
+    return true;
+  }catch(err){
+    pendingLoginName = null;
+    console.warn("Login error:", err);
+    let msg = "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่";
+    if(err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "รหัสผ่านไม่ตรงกับชื่อนี้ กรุณาตรวจสอบรหัสผ่าน หรือใช้ชื่ออื่น";
+    if(err.code === 'auth/weak-password') msg = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+    errorEl.textContent = msg;
+    errorEl.style.display = "block";
+    return false;
+  }
+}
+
+function logoutUser(){
+  auth.signOut().then(()=> location.reload());
+}
+
+/* ===================================================================
+   ADMIN DASHBOARD
+   ต้องมี field role:"admin" บนเอกสาร users/{uid} ของบัญชีนั้น ๆ (ตั้งค่าเอง
+   ผ่าน Firebase Console) และต้องปรับ Firestore Security Rules ให้บัญชี
+   ที่มี role:"admin" อ่านคอลเลกชัน users ทั้งหมดและ redemptions ของทุกคนได้
+   ไม่เช่นนั้นการโหลดข้อมูลด้านล่างจะถูกปฏิเสธสิทธิ์
+=================================================================== */
+let adminUsersData = [];
+let adminRedemptionsData = [];
+
+async function loadAdminDashboard(){
+  const usersTable = document.getElementById('adminUsersTable');
+  const redTable = document.getElementById('adminRedemptionsTable');
+  const summaryWrap = document.getElementById('adminSummary');
+
+  usersTable.innerHTML = `<tr><td class="admin-empty">กำลังโหลดข้อมูล...</td></tr>`;
+  redTable.innerHTML = "";
+  summaryWrap.innerHTML = "";
+
+  try{
+    const usersSnap = await db.collection('users').get();
+    const users = [];
+    const redemptions = [];
+
+    for(const docSnap of usersSnap.docs){
+      const d = docSnap.data();
+      if(d.role === "admin") continue; // ไม่นับบัญชีผู้ดูแลระบบเองในรายงาน
+
+      let redSnap;
+      try{
+        redSnap = await db.collection('users').doc(docSnap.id).collection('redemptions').orderBy('timestamp', 'desc').get();
+      }catch(e){
+        redSnap = { docs: [] };
+      }
+
+      const userRedemptions = redSnap.docs.map(rd=>{
+        const r = rd.data();
+        return {
+          rewardTitle: r.rewardTitle || "-",
+          cost: r.cost || 0,
+          timestamp: (r.timestamp && r.timestamp.toDate) ? r.timestamp.toDate() : null
+        };
+      });
+
+      const totalRedeemedPoints = userRedemptions.reduce((s, r)=> s + r.cost, 0);
+      const currentPoints = d.totalPoints || 0;
+      const totalEarnedPoints = currentPoints + totalRedeemedPoints;
+      const userName = d.name || "-";
+
+      users.push({
+        name: userName,
+        currentPoints,
+        totalEarnedPoints,
+        totalRedeemedPoints,
+        redeemCount: userRedemptions.length
+      });
+
+      userRedemptions.forEach(r=> redemptions.push({ userName, ...r }));
+    }
+
+    users.sort((a, b)=> b.currentPoints - a.currentPoints);
+    redemptions.sort((a, b)=> (b.timestamp || 0) - (a.timestamp || 0));
+
+    adminUsersData = users;
+    adminRedemptionsData = redemptions;
+
+    renderAdminSummary(users, redemptions);
+    renderAdminUsersTable(users);
+    renderAdminRedemptionsTable(redemptions);
+  }catch(err){
+    console.warn("loadAdminDashboard error:", err);
+    usersTable.innerHTML = `<tr><td class="admin-empty">ไม่สามารถโหลดข้อมูลได้ กรุณาตรวจสอบสิทธิ์การเข้าถึง Firestore (Security Rules) ของบัญชีผู้ดูแลระบบ</td></tr>`;
+  }
+}
+
+function renderAdminSummary(users, redemptions){
+  const totalUsers = users.length;
+  const totalCurrentPoints = users.reduce((s, u)=> s + u.currentPoints, 0);
+  const totalRedeemedPoints = users.reduce((s, u)=> s + u.totalRedeemedPoints, 0);
+  const totalEarnedPoints = users.reduce((s, u)=> s + u.totalEarnedPoints, 0);
+
+  document.getElementById('adminSummary').innerHTML = `
+    <div class="admin-stat"><span class="num">${totalUsers}</span><span class="lbl">ผู้ใช้ทั้งหมด</span></div>
+    <div class="admin-stat"><span class="num">${totalEarnedPoints}</span><span class="lbl">แต้มที่ได้รับสะสมทั้งหมด</span></div>
+    <div class="admin-stat"><span class="num">${totalRedeemedPoints}</span><span class="lbl">แต้มที่ใช้แลกรางวัลไปแล้ว</span></div>
+    <div class="admin-stat"><span class="num">${totalCurrentPoints}</span><span class="lbl">แต้มคงเหลือรวม</span></div>
+    <div class="admin-stat"><span class="num">${redemptions.length}</span><span class="lbl">ครั้งที่แลกรางวัล</span></div>
+  `;
+}
+
+function renderAdminUsersTable(users){
+  const table = document.getElementById('adminUsersTable');
+  if(users.length === 0){
+    table.innerHTML = `<tr><td class="admin-empty">ยังไม่มีผู้ใช้ในระบบ</td></tr>`;
+    return;
+  }
+  const rows = users.map(u=> `
+    <tr>
+      <td>${u.name}</td>
+      <td>${u.currentPoints}</td>
+      <td>${u.totalEarnedPoints}</td>
+      <td>${u.totalRedeemedPoints}</td>
+      <td>${u.redeemCount}</td>
+    </tr>
+  `).join('');
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>ชื่อผู้ใช้</th>
+        <th>แต้มคงเหลือ</th>
+        <th>แต้มที่ได้รับสะสม</th>
+        <th>แต้มที่ใช้ไป</th>
+        <th>จำนวนครั้งที่แลก</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  `;
+}
+
+function renderAdminRedemptionsTable(redemptions){
+  const table = document.getElementById('adminRedemptionsTable');
+  if(redemptions.length === 0){
+    table.innerHTML = `<tr><td class="admin-empty">ยังไม่มีประวัติการแลกรางวัล</td></tr>`;
+    return;
+  }
+  const rows = redemptions.map(r=> `
+    <tr>
+      <td>${r.userName}</td>
+      <td>${r.rewardTitle}</td>
+      <td>${r.cost}</td>
+      <td>${r.timestamp ? r.timestamp.toLocaleString('th-TH', { dateStyle:'medium', timeStyle:'short' }) : "-"}</td>
+    </tr>
+  `).join('');
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>ชื่อผู้ใช้</th>
+        <th>รางวัลที่แลก</th>
+        <th>แต้มที่ใช้</th>
+        <th>วันเวลา</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  `;
+}
+
+document.getElementById('adminRefreshBtn').addEventListener('click', loadAdminDashboard);
+
+document.getElementById('adminExportBtn').addEventListener('click', ()=>{
+  if(typeof XLSX === "undefined"){
+    showToast("โหลดไลบรารี Excel ไม่สำเร็จ กรุณาลองใหม่");
+    return;
+  }
+  const usersSheetData = adminUsersData.map(u=>({
+    "ชื่อผู้ใช้": u.name,
+    "แต้มคงเหลือ": u.currentPoints,
+    "แต้มที่ได้รับสะสม": u.totalEarnedPoints,
+    "แต้มที่ใช้ไป": u.totalRedeemedPoints,
+    "จำนวนครั้งที่แลก": u.redeemCount
+  }));
+  const redSheetData = adminRedemptionsData.map(r=>({
+    "ชื่อผู้ใช้": r.userName,
+    "รางวัลที่แลก": r.rewardTitle,
+    "แต้มที่ใช้": r.cost,
+    "วันเวลา": r.timestamp ? r.timestamp.toLocaleString('th-TH', { dateStyle:'medium', timeStyle:'short' }) : "-"
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const wsUsers = XLSX.utils.json_to_sheet(usersSheetData);
+  const wsRed = XLSX.utils.json_to_sheet(redSheetData);
+  XLSX.utils.book_append_sheet(wb, wsUsers, "สรุปผู้ใช้");
+  XLSX.utils.book_append_sheet(wb, wsRed, "ประวัติการแลกรางวัล");
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `รายงานห้องสมุดนักอ่าน_${dateStr}.xlsx`);
+});
+
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const name = document.getElementById('loginName').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  const errorEl = document.getElementById('loginError');
+  const submitBtnEl = e.target.querySelector('button[type="submit"]');
+
+  if(!name || !pass){
+    errorEl.textContent = "กรุณากรอกชื่อนักอ่านและรหัสผ่าน";
+    errorEl.style.display = "block";
+    return;
+  }
+  errorEl.style.display = "none";
+
+  if(submitBtnEl){ submitBtnEl.disabled = true; submitBtnEl.textContent = "กำลังเข้าสู่ระบบ..."; }
+  await doLogin(name, pass);
+  if(submitBtnEl){ submitBtnEl.disabled = false; submitBtnEl.textContent = "เข้าสู่ระบบ"; }
+});
+
+/* Firebase keeps the sign-in session itself (IndexedDB), so on reload we
+   just wait for it to tell us who's signed in - no plaintext password
+   needs to sit in localStorage anymore. This one listener handles BOTH
+   a fresh doLogin() sign-in and a session restored on page reload, so
+   enterAppForUser() only ever runs from one place. */
+auth.onAuthStateChanged(async (user)=>{
+  if(!user) return;
+  const name = pendingLoginName || "";
+  pendingLoginName = null;
+  try{
+    await enterAppForUser(user, name);
+  }catch(err){
+    console.warn("enterAppForUser error:", err);
+  }
+});
+
+/* ---------------- Chapter list (multi-chapter books) ---------------- */
+function openChapterList(bookKey){
+  clearTimeout(window._autoExitTimer);
+  chapterListReturnKey = null;
+  const b = books.find(x=> x.key === bookKey);
+  const cat = categories.find(c=> c.key === b.categoryKey);
+
+  document.getElementById('chapterListZoneTag').textContent = cat.title;
+  document.getElementById('chapterListTitle').textContent = b.title;
+
+  const doneCount = b.chapters.filter((ch, idx)=> state[chapterKey(b.key, idx)] === "done").length;
+  document.getElementById('chapterListProgress').textContent = `อ่านแล้ว ${doneCount}/${b.chapters.length} ตอน`;
+
+  const wrap = document.getElementById('chapterListWrap');
+  wrap.innerHTML = b.chapters.map((ch, idx)=>{
+    const chKey = chapterKey(b.key, idx);
+    const isDone = state[chKey] === "done";
+    const used = attempts[chKey] || 0;
+    const exhausted = !isDone && used >= MAX_ATTEMPTS;
+    const statusHtml = isDone
+      ? `<span class="chapter-status done">✓ อ่านแล้ว</span>`
+      : exhausted
+        ? `<span class="chapter-status exhausted">ครบจำนวนครั้งแล้ว</span>`
+        : `<span class="chapter-status">ยังไม่อ่าน</span>`;
+    const btnLabel = isDone ? "อ่านอีกครั้ง" : "เริ่มอ่าน";
+    return `
+      <div class="chapter-row">
+        <div class="chapter-row-left">
+          <div class="chapter-row-num">ตอนที่ ${idx+1}</div>
+          <div class="chapter-row-title">${ch.title}</div>
+          ${statusHtml}
+        </div>
+        <button class="btn chapter-open-btn" type="button" data-chapter-key="${chKey}">${btnLabel}</button>
+      </div>
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('.chapter-open-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      chapterListReturnKey = bookKey;
+      openModal(btn.dataset.chapterKey);
+    });
+  });
+
+  document.getElementById('modalReady').style.display = "none";
+  document.getElementById('modalQuiz').style.display = "none";
+  document.getElementById('modalResult').style.display = "none";
+  document.getElementById('modalRewardConfirm').style.display = "none";
+  document.getElementById('modalRewardDone').style.display = "none";
+  document.getElementById('modalHistory').style.display = "none";
+  document.getElementById('modalChapters').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
+}
+
+document.getElementById('closeChapters').addEventListener('click', ()=>{
+  chapterListReturnKey = null;
+  document.getElementById('overlay').classList.remove('show');
+});
+
+function openModal(bookKey){
+  clearTimeout(window._autoExitTimer);
+  currentBookKey = bookKey;
+  const unit = getUnit(bookKey);
+  const cat = categories.find(c=>c.key === unit.categoryKey);
+  document.getElementById('readyZoneTag').textContent = cat.title;
+  document.getElementById('readyTitle').textContent = unit.title;
+
+  const isDone = state[bookKey] === "done";
+  const usedAttempts = attempts[bookKey];
+  const exhausted = !isDone && usedAttempts >= MAX_ATTEMPTS;
+
+  const readyDesc = document.getElementById('readyDesc');
+  const attemptNote = document.getElementById('attemptNote');
+  const startBtn = document.getElementById('startBtn');
+
+  if(exhausted){
+    readyDesc.textContent = "คุณทำแบบทดสอบเรื่องนี้ครบ 3 ครั้งแล้วแต่ยังไม่ผ่าน กรุณาเลือกอ่านหนังสือเล่มอื่นก่อน";
+    attemptNote.textContent = "";
+    attemptNote.className = "attempt-note";
+    startBtn.style.display = "none";
+  } else {
+    readyDesc.textContent = "ท่านพร้อมที่จะตอบคำถามเราหรือไม่ ? เมื่อเริ่มแล้วจะมีคำถามทั้งหมด 5 ข้อ";
+    if(!isDone){
+      attemptNote.textContent = `ทำแบบทดสอบได้ทั้งหมด ${MAX_ATTEMPTS} ครั้ง (ใช้ไปแล้ว ${usedAttempts} ครั้ง)`;
+      attemptNote.className = "attempt-note";
+    } else {
+      attemptNote.textContent = "";
+    }
+    startBtn.style.display = "inline-block";
+  }
+
+  document.getElementById('modalReady').style.display = "block";
+  document.getElementById('modalQuiz').style.display = "none";
+  document.getElementById('modalResult').style.display = "none";
+  document.getElementById('modalRewardConfirm').style.display = "none";
+  document.getElementById('modalRewardDone').style.display = "none";
+  document.getElementById('modalHistory').style.display = "none";
+  document.getElementById('modalChapters').style.display = "none";
+  document.getElementById('overlay').classList.add('show');
+}
+
+/* Closes the overlay, or - if we got here from a chapter list - goes
+   back to that list instead of closing entirely, so the reader can
+   easily pick another ตอน of the same book. */
+function exitReadingFlow(){
+  if(chapterListReturnKey){
+    openChapterList(chapterListReturnKey);
+  } else {
+    document.getElementById('overlay').classList.remove('show');
+  }
+}
+
+document.getElementById('closeReady').addEventListener('click', ()=>{
+  exitReadingFlow();
+});
+
+document.getElementById('closeQuiz').addEventListener('click', ()=>{
+  clearTimeout(window._autoExitTimer);
+  exitReadingFlow();
+});
+
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  document.getElementById('modalReady').style.display = "none";
+  document.getElementById('modalQuiz').style.display = "block";
+  startQuiz();
+});
+
+function startQuiz(){
+  const b = getUnit(currentBookKey);
+  const cat = categories.find(c=>c.key === b.categoryKey);
+  document.getElementById('quizZoneTag').textContent = cat.title;
+  document.getElementById('quizTitle').textContent = b.title;
+  document.getElementById('passageBox').textContent = b.passage;
+
+  const attemptNo = attempts[currentBookKey] + 1;
+  document.getElementById('quizAttemptNote').textContent = `ครั้งที่ ${attemptNo} จาก ${MAX_ATTEMPTS}`;
+
+  userAnswers = new Array(b.questions.length).fill(null);
+  renderQuestions();
+  startTime = Date.now();
+}
+
+function renderQuestions(){
+  const b = getUnit(currentBookKey);
+  const qWrap = document.getElementById('questionsWrap');
+  qWrap.innerHTML = "";
+
+  b.questions.forEach((q, qIdx)=>{
+    const block = document.createElement('div');
+    block.className = "question-block";
+
+    let optionsHtml = q.options.map((opt, oIdx)=>{
+      const checked = userAnswers[qIdx] === oIdx ? "checked" : "";
+      const selectedClass = userAnswers[qIdx] === oIdx ? "selected" : "";
+      return `
+        <label class="option-row ${selectedClass}">
+          <input type="radio" name="q_${qIdx}" value="${oIdx}" ${checked} onchange="selectOption(${qIdx}, ${oIdx})">
+          <span>${opt}</span>
+        </label>
+      `;
+    }).join('');
+
+    block.innerHTML = `
+      <div class="q-text"><span class="q-num">${qIdx+1}.</span> ${q.q}</div>
+      ${optionsHtml}
+    `;
+    qWrap.appendChild(block);
+  });
+
+  updateQuizProgress();
+}
+
+function selectOption(qIdx, oIdx){
+  userAnswers[qIdx] = oIdx;
+  renderQuestions();
+}
+
+function updateQuizProgress(){
+  const answered = userAnswers.filter(a => a !== null).length;
+  const total = userAnswers.length;
+  document.getElementById('quizProgress').textContent = `ตอบแล้ว ${answered}/${total} ข้อ`;
+  document.getElementById('submitBtn').disabled = answered < total;
+}
+
+document.getElementById('submitBtn').addEventListener('click', async ()=>{
+  const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+  const mins = String(Math.floor(elapsedSeconds / 60)).padStart(2, '0');
+  const secs = String(elapsedSeconds % 60).padStart(2, '0');
+  const timeStr = `${mins}:${secs}`;
+
+  const b = getUnit(currentBookKey);
+  let score = 0;
+  const reviewList = document.getElementById('reviewList');
+  reviewList.innerHTML = "";
+
+  b.questions.forEach((q, i)=>{
+    const isCorrect = userAnswers[i] === q.correct;
+    if(isCorrect) score++;
+
+    const li = document.createElement('li');
+    li.className = isCorrect ? "right" : "wrong";
+    li.innerHTML = `<strong>ข้อ ${i+1}:</strong> ${isCorrect ? "ถูกต้อง" : "ไม่ถูกต้อง"}`;
+    reviewList.appendChild(li);
+  });
+
+  document.getElementById('resultScore').textContent = `${score}/${b.questions.length}`;
+  document.getElementById('resultTime').textContent = timeStr;
+
+  let level = "ปรับปรุง";
+  if(score === b.questions.length) level = "ดีเยี่ยม";
+  else if(score >= Math.ceil(b.questions.length * 0.6)) level = "ปานกลาง";
+  document.getElementById('resultLevel').textContent = level;
+
+  document.getElementById('modalQuiz').style.display = "none";
+  document.getElementById('modalResult').style.display = "block";
+
+  const passed = score === b.questions.length;
+  const alreadyDone = state[b.key] === "done";
+  const earnedPoints = (passed && !alreadyDone) ? 10 : 0;
+
+  const newTotal = await saveQuizResultRemote(b.key, earnedPoints, passed);
+
+  if(newTotal !== null){
+    totalPoints = newTotal;
+  } else if(earnedPoints > 0){
+    totalPoints += earnedPoints;
+  }
+
+  if(passed){
+    document.getElementById('resultTitle').textContent = "ผ่านด่านสำเร็จ!";
+    document.getElementById('resultNote').style.display = "none";
+    const cBtnPass = document.getElementById('continueBtn');
+    cBtnPass.textContent = "ไปต่อ";
+    cBtnPass.style.display = "block";
+    document.getElementById('retryBtn').style.display = "none";
+
+    state[b.key] = "done";
+    if(b.isChapter){
+      const parentBook = books.find(x=> x.key === b.parentBookKey);
+      state[b.parentBookKey] = parentBook.chapters.every((ch, idx)=> state[chapterKey(parentBook.key, idx)] === "done") ? "done" : "unread";
+    }
+    document.getElementById('pointsText').textContent = totalPoints;
+    if(earnedPoints > 0){
+      showToast(`+${earnedPoints} แต้ม`);
+    }
+  } else {
+    attempts[b.key] = (attempts[b.key] || 0) + 1;
+    const remaining = MAX_ATTEMPTS - attempts[b.key];
+    const exhausted = remaining <= 0;
+
+    if(exhausted){
+      document.getElementById('resultTitle').textContent = "ไม่ผ่าน ครบ 3 ครั้งแล้ว";
+      document.getElementById('resultNote').textContent = "คุณทำแบบทดสอบเรื่องนี้ครบ 3 ครั้งแล้วแต่ยังไม่ผ่าน ระบบจะพากลับไปหน้าหมวดหมู่หนังสือให้เลือกเล่มใหม่";
+      document.getElementById('resultNote').style.display = "block";
+      document.getElementById('retryBtn').style.display = "none";
+      const cBtn = document.getElementById('continueBtn');
+      cBtn.textContent = "กลับไปหน้าหมวดหมู่หนังสือ";
+      cBtn.style.display = "block";
+
+      showToast("ครบ 3 ครั้งแล้ว กรุณาเลือกหนังสือเล่มใหม่");
+
+      clearTimeout(window._autoExitTimer);
+      window._autoExitTimer = setTimeout(()=>{
+        exitReadingFlow();
+      }, 2500);
+    } else {
+      document.getElementById('resultTitle').textContent = "ยังไม่ผ่านด่าน";
+      document.getElementById('resultNote').textContent = `คุณต้องตอบถูกครบทุกข้อจึงจะผ่านด่านนี้ (เหลือโอกาสอีก ${remaining} ครั้ง)`;
+      document.getElementById('resultNote').style.display = "block";
+      document.getElementById('continueBtn').style.display = "none";
+      const rBtn = document.getElementById('retryBtn');
+      rBtn.textContent = "ลองใหม่";
+      rBtn.style.display = "block";
+    }
+  }
+
+  render();
+});
+
+document.getElementById('continueBtn').addEventListener('click', ()=>{
+  clearTimeout(window._autoExitTimer);
+  exitReadingFlow();
+});
+
+document.getElementById('retryBtn').addEventListener('click', ()=>{
+  document.getElementById('modalResult').style.display = "none";
+  document.getElementById('modalQuiz').style.display = "block";
+  startQuiz();
+});
+
+/* ---------------- Reward redemption (via QR Code) ---------------- */
+/* pendingRewardKey เป็นของระบบแลกรางวัลแบบเดิม (ไม่ได้ใช้ปุ่มในการ์ดแล้ว
+   แต่เก็บฟังก์ชันไว้เผื่อใช้งานในอนาคต) ส่วน pendingQrCode คือรหัสที่อ่านได้
+   จากการสแกน QR ซึ่งเป็นเส้นทางเดียวที่ใช้งานจริงตอนนี้ - ปุ่มยืนยัน/ยกเลิก
+   ใน modalRewardConfirm ใช้ modal ร่วมกัน โดยแยกพฤติกรรมตามว่าค่าไหนถูกตั้งไว้ */
+let pendingRewardKey = null;
+let pendingQrCode = null;
+
+function openRewardConfirm(rewardKey){
+  const r = rewards.find(x=>x.key === rewardKey);
+  if(!r) return;
+  if(totalPoints < r.cost){
+    renderRewards();
+    return;
+  }
+  clearTimeout(window._autoExitTimer);
+  pendingRewardKey = rewardKey;
+  pendingQrCode = null;
+
+  document.getElementById('rewardConfirmTitle').textContent = r.title;
+  document.getElementById('rewardConfirmDesc').textContent =
+    `ยืนยันแลกรางวัลนี้ด้วย ${r.cost} แต้มหรือไม่ ? แต้มของคุณจะเหลือ ${totalPoints - r.cost} แต้ม`;
+
+  document.getElementById('modalReady').style.display = "none";
+  document.getElementById('modalQuiz').style.display = "none";
+  document.getElementById('modalResult').style.display = "none";
+  document.getElementById('modalRewardDone').style.display = "none";
+  document.getElementById('modalHistory').style.display = "none";
+  document.getElementById('modalQrScan').style.display = "none";
+  document.getElementById('modalRewardConfirm').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
+}
+
+document.getElementById('rewardCancelBtn').addEventListener('click', ()=>{
+  pendingRewardKey = null;
+  pendingQrCode = null;
+  document.getElementById('overlay').classList.remove('show');
+});
+
+document.getElementById('rewardConfirmBtn').addEventListener('click', async ()=>{
+  /* --- เส้นทางแลกรางวัลด้วย QR Code (ใช้งานจริงในหน้าแอป) --- */
+  if(pendingQrCode){
+    const code = pendingQrCode;
+    const btn = document.getElementById('rewardConfirmBtn');
+    btn.disabled = true;
+    btn.textContent = "กำลังแลกรางวัล...";
+
+    const saveRes = await redeemByQrCodeRemote(code);
+
+    btn.disabled = false;
+    btn.textContent = "ยืนยันแลกรางวัล";
+
+    if(!saveRes || !saveRes.ok){
+      if(saveRes && typeof saveRes.totalPoints === "number"){
+        totalPoints = saveRes.totalPoints;
+        document.getElementById('pointsText').textContent = totalPoints;
+      }
+      document.getElementById('overlay').classList.remove('show');
+      showToast((saveRes && saveRes.message) || "แลกรางวัลไม่สำเร็จ");
+      pendingQrCode = null;
+      renderRewards();
+      return;
+    }
+
+    totalPoints = saveRes.totalPoints;
+    document.getElementById('pointsText').textContent = totalPoints;
+
+    document.getElementById('rewardDoneTitle').textContent = "ยินดีด้วย !";
+    document.getElementById('rewardDoneDesc').textContent = `แลกรางวัลด้วย QR Code สำเร็จ (-${saveRes.cost} แต้ม)`;
+
+    document.getElementById('modalRewardConfirm').style.display = "none";
+    document.getElementById('modalRewardDone').style.display = "block";
+
+    showToast(`-${saveRes.cost} แต้ม แลกรางวัลสำเร็จ`);
+
+    pendingQrCode = null;
+    renderRewards();
+    return;
+  }
+
+  /* --- เส้นทางเดิม (อ้างอิง key ในอาเรย์ rewards โดยตรง) --- */
+  const r = rewards.find(x=>x.key === pendingRewardKey);
+  if(!r) return;
+
+  if(totalPoints < r.cost){
+    document.getElementById('overlay').classList.remove('show');
+    renderRewards();
+    return;
+  }
+
+  const btn = document.getElementById('rewardConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = "กำลังแลกรางวัล...";
+
+  const saveRes = await redeemRewardRemote(r.key, r.title, r.cost);
+
+  btn.disabled = false;
+  btn.textContent = "ยืนยันแลกรางวัล";
+
+  /* backend explicitly rejected the redemption (e.g. not enough points after
+     all - someone else redeemed on another device first) - don't touch
+     points, just tell the reader and let them try a smaller reward */
+  if(saveRes && !saveRes.ok){
+    if(typeof saveRes.totalPoints === "number"){
+      totalPoints = saveRes.totalPoints;
+      document.getElementById('pointsText').textContent = totalPoints;
+    }
+    document.getElementById('overlay').classList.remove('show');
+    showToast(saveRes.message || "แลกรางวัลไม่สำเร็จ");
+    pendingRewardKey = null;
+    renderRewards();
+    return;
+  }
+
+  if(saveRes && saveRes.ok && typeof saveRes.totalPoints === "number"){
+    totalPoints = saveRes.totalPoints;
+  } else {
+    /* backend not reachable - still deduct locally so the UI works */
+    totalPoints -= r.cost;
+  }
+
+  document.getElementById('pointsText').textContent = totalPoints;
+
+  document.getElementById('rewardDoneTitle').textContent = "ยินดีด้วย !";
+  document.getElementById('rewardDoneDesc').textContent = `คุณแลก "${r.title}" เรียบร้อยแล้ว (-${r.cost} แต้ม)`;
+
+  document.getElementById('modalRewardConfirm').style.display = "none";
+  document.getElementById('modalRewardDone').style.display = "block";
+
+  showToast(`-${r.cost} แต้ม แลก${r.title}สำเร็จ`);
+
+  pendingRewardKey = null;
+  renderRewards();
+});
+
+document.getElementById('rewardDoneBtn').addEventListener('click', ()=>{
+  document.getElementById('overlay').classList.remove('show');
+});
+
+/* ---------------- QR Code scanning (กล้องฝั่งนักอ่าน) ---------------- */
+let qrScanStream = null;
+let qrScanRAF = null;
+let qrScanBusy = false;
+
+async function openQrScanModal(){
+  clearTimeout(window._autoExitTimer);
+  qrScanBusy = false;
+
+  document.getElementById('modalReady').style.display = "none";
+  document.getElementById('modalQuiz').style.display = "none";
+  document.getElementById('modalResult').style.display = "none";
+  document.getElementById('modalRewardConfirm').style.display = "none";
+  document.getElementById('modalRewardDone').style.display = "none";
+  document.getElementById('modalHistory').style.display = "none";
+  document.getElementById('modalQrScan').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('qrScanStatus').textContent = "กำลังเปิดกล้อง...";
+
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    document.getElementById('qrScanStatus').textContent = "อุปกรณ์นี้ไม่รองรับการเปิดกล้องผ่านเบราว์เซอร์";
+    return;
+  }
+  if(typeof jsQR === "undefined"){
+    document.getElementById('qrScanStatus').textContent = "โหลดไลบรารีสแกน QR ไม่สำเร็จ กรุณาลองใหม่";
+    return;
+  }
+
+  try{
+    qrScanStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
+  }catch(err){
+    console.warn("getUserMedia error:", err);
+    document.getElementById('qrScanStatus').textContent = "เปิดกล้องไม่สำเร็จ กรุณาอนุญาตให้เว็บนี้ใช้กล้อง แล้วลองใหม่";
+    return;
+  }
+
+  const video = document.getElementById('qrScanVideo');
+  video.srcObject = qrScanStream;
+  try{ await video.play(); }catch(e){ /* บางเบราว์เซอร์ autoplay แล้วเรียก play() ซ้ำจะ throw เฉย ๆ ไม่เป็นไร */ }
+
+  document.getElementById('qrScanStatus').textContent = "เล็งกล้องไปที่ QR Code ที่เจ้าหน้าที่แสดงให้";
+  qrScanRAF = requestAnimationFrame(scanQrFrame);
+}
+
+function scanQrFrame(){
+  const video = document.getElementById('qrScanVideo');
+  const canvas = document.getElementById('qrScanCanvas');
+
+  if(video && video.readyState === video.HAVE_ENOUGH_DATA && !qrScanBusy){
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const found = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts:"dontInvert" });
+    if(found && found.data){
+      qrScanBusy = true;
+      handleQrDetected(found.data.trim());
+      return;
+    }
+  }
+  qrScanRAF = requestAnimationFrame(scanQrFrame);
+}
+
+function stopQrScan(){
+  if(qrScanRAF) cancelAnimationFrame(qrScanRAF);
+  qrScanRAF = null;
+  if(qrScanStream){
+    qrScanStream.getTracks().forEach(t=> t.stop());
+    qrScanStream = null;
+  }
+  const video = document.getElementById('qrScanVideo');
+  if(video) video.srcObject = null;
+}
+
+function closeQrScanModal(){
+  stopQrScan();
+  qrScanBusy = false;
+  document.getElementById('modalQrScan').style.display = "none";
+  document.getElementById('overlay').classList.remove('show');
+}
+
+document.getElementById('qrScanCloseBtn').addEventListener('click', closeQrScanModal);
+
+async function handleQrDetected(code){
+  stopQrScan();
+  document.getElementById('qrScanStatus').textContent = "กำลังตรวจสอบ QR Code...";
+
+  const peek = await peekQrCodeRemote(code);
+
+  if(!peek.ok){
+    showToast(peek.message || "QR Code ไม่ถูกต้อง");
+    closeQrScanModal();
+    return;
+  }
+
+  pendingQrCode = code;
+  pendingRewardKey = null;
+
+  document.getElementById('rewardConfirmTitle').textContent = "แลกรางวัลด้วย QR Code";
+  document.getElementById('rewardConfirmDesc').textContent =
+    `ยืนยันแลกรางวัลนี้ด้วย ${peek.points} แต้มหรือไม่ ? แต้มของคุณจะเหลือ ${totalPoints - peek.points} แต้ม`;
+
+  document.getElementById('modalQrScan').style.display = "none";
+  document.getElementById('modalRewardConfirm').style.display = "block";
+}
+
+/* ---------------- Redemption history ---------------- */
+async function openRedemptionHistory(){
+  clearTimeout(window._autoExitTimer);
+
+  document.getElementById('modalReady').style.display = "none";
+  document.getElementById('modalQuiz').style.display = "none";
+  document.getElementById('modalResult').style.display = "none";
+  document.getElementById('modalRewardConfirm').style.display = "none";
+  document.getElementById('modalRewardDone').style.display = "none";
+  document.getElementById('modalHistory').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
+
+  const contentEl = document.getElementById('historyContent');
+  contentEl.innerHTML = `<div class="history-loading">กำลังโหลดข้อมูล...</div>`;
+
+  let redemptions = [];
+  try{
+    const snap = await currentUserDocRef
+      .collection('redemptions')
+      .orderBy('timestamp', 'desc')
+      .limit(50)
+      .get();
+    redemptions = snap.docs.map(doc=>{
+      const d = doc.data();
+      const dateStr = d.timestamp && d.timestamp.toDate
+        ? d.timestamp.toDate().toLocaleString('th-TH', { dateStyle:'medium', timeStyle:'short' })
+        : "";
+      return { rewardTitle: d.rewardTitle, cost: d.cost, timestamp: dateStr };
+    });
+  }catch(err){
+    console.warn("getRedemptions error:", err);
+    contentEl.innerHTML = `<div class="history-empty">ไม่สามารถโหลดประวัติได้ในขณะนี้</div>`;
+    return;
+  }
+
+  if(redemptions.length === 0){
+    contentEl.innerHTML = `<div class="history-empty">ยังไม่มีประวัติการแลกแต้ม</div>`;
+    return;
+  }
+
+  const list = document.createElement('ul');
+  list.className = "history-list";
+
+  redemptions.forEach(item=>{
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <div class="h-left">
+        <span class="h-title">${item.rewardTitle || "-"}</span>
+        <span class="h-date">${item.timestamp || ""}</span>
+      </div>
+      <span class="h-cost">-${item.cost} แต้ม</span>
+    `;
+    list.appendChild(li);
+  });
+
+  contentEl.innerHTML = "";
+  contentEl.appendChild(list);
+}
+
+document.getElementById('historyCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('overlay').classList.remove('show');
+});
+
+function showToast(text){
+  const toast = document.getElementById('pointsToast');
+  toast.textContent = text;
+  toast.classList.add('show');
+  setTimeout(()=>{
+    toast.classList.remove('show');
+  }, 2000);
+}
+
+(async function initApp(){
+  await loadContentFromFirestore();
+  initStateAndAttempts();
+  buildShelfDeco();
+  render();
+})();
+</script>
+</body>
+</html>

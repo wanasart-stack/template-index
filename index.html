@@ -1145,7 +1145,7 @@
       <span class="book-count" id="bookCountText">อ่านแล้ว 0/0 เล่ม</span>
     </div>
     <div class="header-nav">
-      <button class="nav-btn" id="navToRewardsBtn" type="button">🎁 แลกแต้มเป็นรางวัล</button>
+      <button class="nav-btn" id="navToRewardsBtn" type="button">🎁 แคตตาล็อกรางวัล</button>
       <button class="nav-btn" id="navToLibraryBtn" type="button" style="display:none;">📚 กลับไปหน้าอ่านหนังสือ</button>
     </div>
     <div class="category-filter-bar" id="categoryFilterBar"></div>
@@ -2725,7 +2725,7 @@ function renderRewards(){
   scanCta.className = "rewards-scan-cta";
   scanCta.innerHTML = `
     <button class="btn" id="scanQrBtn" type="button">📷 สแกน QR Code เพื่อแลกรางวัล</button>
-    <p class="rewards-scan-hint">แจ้งเจ้าหน้าที่ว่าต้องการแลกรางวัลชิ้นใด เจ้าหน้าที่จะออก QR Code ให้ตามจำนวนแต้ม จากนั้นกดปุ่มนี้เพื่อสแกนและตัดแต้มอัตโนมัติ</p>
+    <p class="rewards-scan-hint">แจ้งเจ้าหน้าที่ว่าต้องการแลกรางวัลชิ้นใด เจ้าหน้าที่จะออก QR Code จากนั้นกดปุ่มสแกน QR Code เพื่อแลกรางวัล</p>
   `;
   root.appendChild(scanCta);
 

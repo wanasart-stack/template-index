@@ -599,12 +599,17 @@
     width:118px;
     height:158px;
     border-radius:3px 9px 9px 3px;
+    box-shadow:0 6px 0 rgba(0,0,0,0.22), 0 10px 16px rgba(0,0,0,0.2);
+    border-left:6px solid rgba(255,255,255,0.28);
+  }
+  .book-cover-media{
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    overflow:hidden;
     display:flex;
     align-items:center;
     justify-content:center;
-    padding:14px 12px;
-    box-shadow:0 6px 0 rgba(0,0,0,0.22), 0 10px 16px rgba(0,0,0,0.2);
-    border-left:6px solid rgba(255,255,255,0.28);
   }
   .book-cover::after{
     content:"";
@@ -632,6 +637,13 @@
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
+    padding:0 8px;
+  }
+  .book-cover-img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
   }
   .book.unread .book-cover{ filter:saturate(0.55) brightness(0.92); }
 
@@ -2373,6 +2385,7 @@ window.seedContentToFirestore = async function(){
         blurb: b.blurb || "",
         featured: !!b.featured,
         color: b.color,
+        coverImg: b.coverImg || "",
         order: i
       };
       if(b.chapters){
@@ -2487,6 +2500,15 @@ function buildShelfDeco(){
 
 /* สร้าง element การ์ดหนังสือ 1 ใบ ใช้ร่วมกันทั้งแถว "เล่มแนะนำ" ด้านบนสุด
    และแถวหนังสือในแต่ละหมวดหมู่ด้านล่าง เพื่อไม่ให้โค้ดซ้ำซ้อน */
+/* ถ้ารูปปกที่แอดมินใส่ไว้โหลดไม่ขึ้น (ยังไม่ได้อัปโหลด, พิมพ์ชื่อไฟล์ผิด, ลบไฟล์
+   ทิ้ง) ให้สลับกลับไปโชว์ชื่อเรื่องบนพื้นสีปกเดิมแทน กันไม่ให้ปกว่างเปล่า */
+function handleBookCoverImgError(imgEl){
+  const titleDiv = document.createElement('div');
+  titleDiv.className = "book-cover-title";
+  titleDiv.textContent = imgEl.alt;
+  imgEl.replaceWith(titleDiv);
+}
+
 function buildBookCard(b){
   const st = state[b.key];
   const div = document.createElement('div');
@@ -2515,11 +2537,15 @@ function buildBookCard(b){
     }
   }
 
+  const coverInner = b.coverImg
+    ? `<img class="book-cover-img" src="${b.coverImg}" alt="${b.title}" onerror="handleBookCoverImgError(this)">`
+    : `<div class="book-cover-title">${b.title}</div>`;
+
   div.innerHTML = `
     <div class="book-cover" style="background:${b.color}">
+      <div class="book-cover-media">${coverInner}</div>
       ${newBadge}
       ${coverBadge}
-      <div class="book-cover-title">${b.title}</div>
     </div>
     <div class="book-title">${b.title}</div>
     ${b.blurb ? `<div class="book-blurb">${b.blurb}</div>` : ""}

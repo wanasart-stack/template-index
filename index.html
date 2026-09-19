@@ -2931,8 +2931,7 @@ function openKpchForm(){
   document.getElementById('kpchError').style.display = "none";
   updateKpchPointsPreview();
 
-  document.getElementById('modalRewardConfirm').style.display = "none";
-  document.getElementById('modalQrScan').style.display = "none";
+  hideAllModals();
   document.getElementById('modalKpchForm').style.display = "block";
   document.getElementById('overlay').classList.add('show');
 }
@@ -3000,8 +2999,9 @@ function openKpchConfirm(){
   `;
   document.getElementById('kpchConfirmError').style.display = "none";
 
-  document.getElementById('modalKpchForm').style.display = "none";
+  hideAllModals();
   document.getElementById('modalKpchConfirm').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
 }
 
 function escapeHtmlKpch(s){
@@ -3118,6 +3118,15 @@ function showPage(page){
      ซ่อนไว้ตอนอยู่หน้าแลกรางวัลเพื่อไม่ให้ดูรกเกินไป */
   document.getElementById('categoryFilterBar').style.display = isRewards ? "none" : "flex";
   window.scrollTo({ top:0, behavior:"smooth" });
+}
+
+/* ปิด modal ทุกบานพร้อมกัน (เลือกจาก class "modal" ที่ทุก modal ในหน้านี้ใช้
+   ร่วมกัน) เรียกไว้ก่อนเปิด modal ใหม่ทุกครั้งเพื่อกันไม่ให้ modal เก่าที่
+   เปิดค้างอยู่โผล่ซ้อนกับ modal ใหม่ (เช่นเคยเจอปัญหา: เปิดดู "ประวัติการ
+   แลกแต้ม" ค้างไว้ แล้วกดปุ่มแลกชั่วโมง กพช. ต่อ กลายเป็นสอง modal
+   แสดงซ้อนกันเพราะฟังก์ชันเปิด modal เดิมไล่ปิดทีละชื่อเอง ตกหล่นไม่ครบ) */
+function hideAllModals(){
+  document.querySelectorAll('.modal').forEach(m => m.style.display = "none");
 }
 
 document.getElementById('navToRewardsBtn').addEventListener('click', ()=> showPage('rewards'));
@@ -3618,12 +3627,7 @@ function openChapterList(bookKey){
     });
   });
 
-  document.getElementById('modalReady').style.display = "none";
-  document.getElementById('modalQuiz').style.display = "none";
-  document.getElementById('modalResult').style.display = "none";
-  document.getElementById('modalRewardConfirm').style.display = "none";
-  document.getElementById('modalRewardDone').style.display = "none";
-  document.getElementById('modalHistory').style.display = "none";
+  hideAllModals();
   document.getElementById('modalChapters').style.display = "block";
   document.getElementById('overlay').classList.add('show');
 }
@@ -3665,13 +3669,8 @@ function openModal(bookKey){
     startBtn.style.display = "inline-block";
   }
 
+  hideAllModals();
   document.getElementById('modalReady').style.display = "block";
-  document.getElementById('modalQuiz').style.display = "none";
-  document.getElementById('modalResult').style.display = "none";
-  document.getElementById('modalRewardConfirm').style.display = "none";
-  document.getElementById('modalRewardDone').style.display = "none";
-  document.getElementById('modalHistory').style.display = "none";
-  document.getElementById('modalChapters').style.display = "none";
   document.getElementById('overlay').classList.add('show');
 }
 
@@ -3899,12 +3898,7 @@ function openRewardConfirm(rewardKey){
   document.getElementById('rewardConfirmDesc').textContent =
     `ยืนยันแลกรางวัลนี้ด้วย ${r.cost} แต้มหรือไม่ ? แต้มของคุณจะเหลือ ${totalPoints - r.cost} แต้ม`;
 
-  document.getElementById('modalReady').style.display = "none";
-  document.getElementById('modalQuiz').style.display = "none";
-  document.getElementById('modalResult').style.display = "none";
-  document.getElementById('modalRewardDone').style.display = "none";
-  document.getElementById('modalHistory').style.display = "none";
-  document.getElementById('modalQrScan').style.display = "none";
+  hideAllModals();
   document.getElementById('modalRewardConfirm').style.display = "block";
   document.getElementById('overlay').classList.add('show');
 }
@@ -4024,12 +4018,7 @@ async function openQrScanModal(){
   clearTimeout(window._autoExitTimer);
   qrScanBusy = false;
 
-  document.getElementById('modalReady').style.display = "none";
-  document.getElementById('modalQuiz').style.display = "none";
-  document.getElementById('modalResult').style.display = "none";
-  document.getElementById('modalRewardConfirm').style.display = "none";
-  document.getElementById('modalRewardDone').style.display = "none";
-  document.getElementById('modalHistory').style.display = "none";
+  hideAllModals();
   document.getElementById('modalQrScan').style.display = "block";
   document.getElementById('overlay').classList.add('show');
   document.getElementById('qrScanStatus').textContent = "กำลังเปิดกล้อง...";
@@ -4126,11 +4115,7 @@ async function handleQrDetected(code){
 async function openRedemptionHistory(){
   clearTimeout(window._autoExitTimer);
 
-  document.getElementById('modalReady').style.display = "none";
-  document.getElementById('modalQuiz').style.display = "none";
-  document.getElementById('modalResult').style.display = "none";
-  document.getElementById('modalRewardConfirm').style.display = "none";
-  document.getElementById('modalRewardDone').style.display = "none";
+  hideAllModals();
   document.getElementById('modalHistory').style.display = "block";
   document.getElementById('overlay').classList.add('show');
 

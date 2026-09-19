@@ -140,6 +140,73 @@
     border-color:var(--brass);
     background:#fff;
   }
+  .field select, .field textarea{
+    width:100%;
+    padding:11px 13px;
+    border:1px solid rgba(42,29,18,0.3);
+    border-radius:4px;
+    background:rgba(255,255,255,0.6);
+    font-family:'Sarabun', sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+  }
+  .field select:focus, .field textarea:focus{
+    outline:none;
+    border-color:var(--brass);
+    background:#fff;
+  }
+  .field-hint{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:5px;
+  }
+
+  /* ---------- Rewards: two sections (กพช. hours / goods) ---------- */
+  .rewards-kpch-section{
+    background:rgba(180,144,63,0.10);
+    border:1px solid rgba(180,144,63,0.4);
+    border-radius:10px;
+    padding:24px 22px;
+    margin-bottom:28px;
+    text-align:center;
+  }
+  .rewards-kpch-section h3{
+    font-size:17px;
+    margin:0 0 6px;
+    color:var(--wood-dark);
+  }
+  .rewards-kpch-rate{
+    font-size:13px;
+    font-weight:600;
+    color:var(--brass);
+    margin:0 0 16px;
+  }
+  .rewards-kpch-desc{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:12px 0 0;
+    line-height:1.7;
+    max-width:440px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+  .rewards-goods-section h3{
+    font-size:17px;
+    margin:0 0 14px;
+    color:var(--wood-dark);
+    text-align:left;
+  }
+  .kpch-points-preview{
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+    background:rgba(180,144,63,0.14);
+    border-radius:6px;
+    padding:10px 14px;
+    margin:6px 0 16px;
+    text-align:center;
+  }
+  .kpch-points-preview.insufficient{ color:#A3372A; background:rgba(163,55,42,0.1); }
   .login-error{
     font-size:12.5px;
     color:#A3372A;
@@ -1267,6 +1334,34 @@
     <canvas id="qrScanCanvas" style="display:none;"></canvas>
     <p class="qr-scan-status" id="qrScanStatus">กำลังเปิดกล้อง...</p>
     <button class="btn secondary" id="qrScanCloseBtn">ปิด</button>
+  </div>
+
+  <div class="modal wide" id="modalKpchForm" style="display:none;">
+    <div class="zone-tag">แลกแต้มเป็นชั่วโมง กพช.</div>
+    <h2 style="margin-bottom:14px;">กรอกข้อมูลแลกชั่วโมง กพช.</h2>
+    <div class="field">
+      <label>ชื่อ-สกุล</label>
+      <input type="text" id="kpchName" placeholder="ชื่อ-นามสกุล">
+    </div>
+    <div class="field">
+      <label>รหัสนักศึกษา</label>
+      <input type="text" id="kpchStudentId" placeholder="รหัสนักศึกษา">
+    </div>
+    <div class="field">
+      <label>ศูนย์ / ครูประจำกลุ่ม</label>
+      <select id="kpchCenter">
+        <option value="">-- เลือกศูนย์ / ครูประจำกลุ่ม --</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>จำนวนชั่วโมง กพช. ที่ต้องการแลก</label>
+      <input type="number" id="kpchHours" min="1" step="1" placeholder="เช่น 2">
+      <div class="field-hint">อัตราแลก: 500 แต้ม = 1 ชั่วโมง</div>
+    </div>
+    <div class="kpch-points-preview" id="kpchPointsPreview">กรอกจำนวนชั่วโมงเพื่อดูแต้มที่ต้องใช้</div>
+    <p class="login-error" id="kpchError" style="display:none;"></p>
+    <button class="btn" id="kpchSubmitBtn" type="button">ส่งข้อมูล</button>
+    <button class="btn secondary" id="kpchCancelBtn" type="button">ยกเลิก</button>
   </div>
 
   <div class="modal wide" id="modalChapters" style="display:none;">
@@ -2688,7 +2783,7 @@ function renderRewards(){
   const headerEl = document.createElement('div');
   headerEl.className = "rewards-header";
   headerEl.innerHTML = `
-    <h2>แคตตาล็อกรางวัล</h2>
+    <h2>แลกแต้มเป็นรางวัล</h2>
     <div class="rewards-header-right">
       <div class="rewards-sub">แต้มของคุณตอนนี้ ${totalPoints} แต้ม</div>
       <button class="history-link" id="historyLinkBtn" type="button">ดูประวัติการแลกแต้ม</button>
@@ -2697,6 +2792,26 @@ function renderRewards(){
   root.appendChild(headerEl);
 
   document.getElementById('historyLinkBtn').addEventListener('click', openRedemptionHistory);
+
+  /* ---------- ส่วนที่ 1: แลกแต้มเป็นชั่วโมง กพช. ---------- */
+  const kpchSection = document.createElement('div');
+  kpchSection.className = "rewards-kpch-section";
+  kpchSection.innerHTML = `
+    <h3>🕐 แลกแต้มเป็นชั่วโมง กพช.</h3>
+    <p class="rewards-kpch-rate">อัตราแลก: 500 แต้ม = 1 ชั่วโมง</p>
+    <button class="btn" id="openKpchFormBtn" type="button" style="width:auto; padding:13px 28px;">กรอกข้อมูลแลกชั่วโมง กพช.</button>
+    <p class="rewards-kpch-desc">กรอกชื่อ-สกุล รหัสนักศึกษา ศูนย์/ครูประจำกลุ่ม และจำนวนชั่วโมงที่ต้องการแลก ระบบจะตัดแต้มให้ทันทีและแจ้งไปยังเจ้าหน้าที่เพื่อดำเนินการบันทึกชั่วโมงให้ต่อไป</p>
+  `;
+  root.appendChild(kpchSection);
+  document.getElementById('openKpchFormBtn').addEventListener('click', openKpchForm);
+
+  /* ---------- ส่วนที่ 2: แลกแต้มเป็นสินค้าอุปโภคบริโภค ---------- */
+  const goodsSection = document.createElement('div');
+  goodsSection.className = "rewards-goods-section";
+
+  const goodsHeading = document.createElement('h3');
+  goodsHeading.textContent = "🛍️ แลกแต้มเป็นสินค้าอุปโภคบริโภค";
+  goodsSection.appendChild(goodsHeading);
 
   const row = document.createElement('div');
   row.className = "rewards-row";
@@ -2719,18 +2834,179 @@ function renderRewards(){
     row.appendChild(card);
   });
 
-  root.appendChild(row);
+  goodsSection.appendChild(row);
 
   const scanCta = document.createElement('div');
   scanCta.className = "rewards-scan-cta";
   scanCta.innerHTML = `
     <button class="btn" id="scanQrBtn" type="button">📷 สแกน QR Code เพื่อแลกรางวัล</button>
-    <p class="rewards-scan-hint">แจ้งเจ้าหน้าที่ว่าต้องการแลกรางวัลชิ้นใด เจ้าหน้าที่จะออก QR Code จากนั้นกดปุ่มสแกน QR Code เพื่อแลกรางวัล</p>
+    <p class="rewards-scan-hint">แจ้งเจ้าหน้าที่ว่าต้องการแลกรางวัลชิ้นใด เจ้าหน้าที่จะออก QR Code ให้ตามจำนวนแต้ม จากนั้นกดปุ่มนี้เพื่อสแกนและตัดแต้มอัตโนมัติ</p>
   `;
-  root.appendChild(scanCta);
+  goodsSection.appendChild(scanCta);
+
+  root.appendChild(goodsSection);
 
   document.getElementById('scanQrBtn').addEventListener('click', openQrScanModal);
 }
+
+/* ===================================================================
+   แลกแต้มเป็นชั่วโมง กพช.
+   อัตราคงที่ 500 แต้ม = 1 ชั่วโมง ผู้อ่านกรอกฟอร์มเอง (ไม่ต้องสแกน QR)
+   ระบบตัดแต้มทันทีผ่าน transaction แล้วบันทึกคำขอลง Firestore collection
+   "kpchRequests" ให้แอดมินเข้าไปดูและดำเนินการบันทึกชั่วโมงจริงต่อใน
+   หน้า admin.html (ดูส่วน "คำขอแลกชั่วโมง กพช.")
+=================================================================== */
+const KPCH_POINTS_PER_HOUR = 500;
+const KPCH_CENTERS = [
+  "ศกร.ระดับตำบลตับเต่า (ครูประสิทธิ วิชัย)",
+  "ศกร.ระดับตำบลหงาว (ครูเด่นนภา นิทะโน)",
+  "ศกร.ระดับตำบลเวียง (ครูรัชฎาภรณ์ สุริยนต์)",
+  "ศกร.ระดับตำบลสันทรายงาม (ครูวีนัส สรรพสุข)",
+  "ศกร.ระดับตำบลปล้อง (ครูพรทิพย์ สุขบัญชาชัย)",
+  "ศกร.ระดับตำบลงิ้ว (ครูกัญญ์วรา สีหมนตรี)",
+  "ศกร.ระดับตำบลหนองแรด (ครูรวินท์นิภา จันทวิมล)",
+  "ศกร.ระดับตำบลแม่ลอย (ครูดวงกมล เข็มเพชร)",
+  "ศกร.ระดับตำบลศรีดอนไชย (ครูศุภชัย แก้วกระจ่าง)",
+  "ศกร.ระดับตำบลเชียงเคี่ยน (ครูธันยพัต ปกครองบ้าน)",
+  "ศกร.ระดับตำบลเวียง (ครูอดิเรก ประยศ)",
+  "ศกร.ระดับตำบลงิ้ว (ครูทับทิม พุทธตาล)",
+  "ศกร.ระดับตำบลเชียงเคี่ยน (ครูปราณี ใจกว้าง)",
+  "ศศช.บ้านขุนต้า (ครูสรนันท์ แสนยศ)",
+  "ศศช.บ้านราฎภักดี (ครูสายสุนีย์ โกฏฐา)",
+  "ศศช.บ้านขุนห้วยไคร้ (ครูสุนิสา จินดาจักร)",
+  "ศศช.บ้านเล่าตาขาว (ครูนรินทร์ลักษณ์ นักหล่อ)",
+  "ศศช.บ้านราฎรักษา (ครูวิมล สุทธิจันทร์)",
+  "ศศช.บ้านไทยสามัคคี (ครูอนุพงษ์ สมจริงจงรักษ์)",
+  "ศศช.บ้านราฎภักดี (ครูวนศาสตร์ วัฒนาสกุลลี)",
+  "ศรช.ระดับตำบลหงาว (ครูธวัชชัย เพ็ชรแสง)",
+  "ศรช.ระดับตำบลเวียง (ครูชินดนัย คำต๊ะ)"
+];
+
+function populateKpchCenterOptions(){
+  const sel = document.getElementById('kpchCenter');
+  if(sel.options.length > 1) return; // เติมแค่ครั้งเดียวพอ
+  KPCH_CENTERS.forEach(name=>{
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+function openKpchForm(){
+  populateKpchCenterOptions();
+  document.getElementById('kpchName').value = "";
+  document.getElementById('kpchStudentId').value = "";
+  document.getElementById('kpchCenter').value = "";
+  document.getElementById('kpchHours').value = "";
+  document.getElementById('kpchError').style.display = "none";
+  updateKpchPointsPreview();
+
+  document.getElementById('modalRewardConfirm').style.display = "none";
+  document.getElementById('modalQrScan').style.display = "none";
+  document.getElementById('modalKpchForm').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeKpchForm(){
+  document.getElementById('modalKpchForm').style.display = "none";
+  document.getElementById('overlay').classList.remove('show');
+}
+
+function updateKpchPointsPreview(){
+  const preview = document.getElementById('kpchPointsPreview');
+  const hours = parseInt(document.getElementById('kpchHours').value, 10);
+  if(!hours || hours <= 0){
+    preview.textContent = "กรอกจำนวนชั่วโมงเพื่อดูแต้มที่ต้องใช้";
+    preview.className = "kpch-points-preview";
+    return;
+  }
+  const needed = hours * KPCH_POINTS_PER_HOUR;
+  const enough = needed <= totalPoints;
+  preview.textContent = `ใช้ ${needed} แต้ม (คุณมี ${totalPoints} แต้ม)${enough ? "" : " - แต้มไม่พอ"}`;
+  preview.className = "kpch-points-preview" + (enough ? "" : " insufficient");
+}
+
+document.getElementById('kpchHours').addEventListener('input', updateKpchPointsPreview);
+document.getElementById('kpchCancelBtn').addEventListener('click', closeKpchForm);
+
+document.getElementById('kpchSubmitBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('kpchName').value.trim();
+  const studentId = document.getElementById('kpchStudentId').value.trim();
+  const center = document.getElementById('kpchCenter').value;
+  const hours = parseInt(document.getElementById('kpchHours').value, 10);
+  const errorEl = document.getElementById('kpchError');
+  errorEl.style.display = "none";
+
+  if(!name){ errorEl.textContent = "กรุณากรอกชื่อ-สกุล"; errorEl.style.display = "block"; return; }
+  if(!studentId){ errorEl.textContent = "กรุณากรอกรหัสนักศึกษา"; errorEl.style.display = "block"; return; }
+  if(!center){ errorEl.textContent = "กรุณาเลือกศูนย์ / ครูประจำกลุ่ม"; errorEl.style.display = "block"; return; }
+  if(!hours || hours <= 0){ errorEl.textContent = "กรุณากรอกจำนวนชั่วโมงที่ต้องการแลก"; errorEl.style.display = "block"; return; }
+
+  const pointsNeeded = hours * KPCH_POINTS_PER_HOUR;
+  if(pointsNeeded > totalPoints){
+    errorEl.textContent = `แต้มไม่พอ ต้องใช้ ${pointsNeeded} แต้ม แต่คุณมี ${totalPoints} แต้ม`;
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const btn = document.getElementById('kpchSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = "กำลังส่งข้อมูล...";
+
+  try{
+    const result = await db.runTransaction(async (tx)=>{
+      const userSnap = await tx.get(currentUserDocRef);
+      const current = (userSnap.data() || {}).totalPoints || 0;
+      if(pointsNeeded > current){
+        return { ok:false, message:`แต้มไม่พอ ต้องใช้ ${pointsNeeded} แต้ม แต่คุณเหลือ ${current} แต้ม` };
+      }
+      const updated = current - pointsNeeded;
+      tx.update(currentUserDocRef, { totalPoints: updated });
+
+      const requestRef = db.collection('kpchRequests').doc();
+      tx.set(requestRef, {
+        studentName: name,
+        studentId: studentId,
+        center: center,
+        hours: hours,
+        pointsUsed: pointsNeeded,
+        requesterUid: currentUserDocRef.id,
+        requesterName: currentUserName,
+        status: "pending",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      const redemptionRef = currentUserDocRef.collection('redemptions').doc();
+      tx.set(redemptionRef, {
+        rewardTitle: `แลกชั่วโมง กพช. ${hours} ชั่วโมง (${center})`,
+        cost: pointsNeeded,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        totalPointsAfter: updated
+      });
+
+      return { ok:true, totalPoints: updated };
+    });
+
+    if(!result.ok){
+      errorEl.textContent = result.message;
+      errorEl.style.display = "block";
+    } else {
+      totalPoints = result.totalPoints;
+      document.getElementById('pointsText').textContent = totalPoints;
+      closeKpchForm();
+      showToast(`ส่งคำขอแลก ${hours} ชั่วโมงสำเร็จ (-${pointsNeeded} แต้ม) เจ้าหน้าที่จะดำเนินการบันทึกชั่วโมงให้ต่อไป`);
+      renderRewards();
+    }
+  }catch(err){
+    console.warn("kpch submit error:", err);
+    errorEl.textContent = "ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่";
+    errorEl.style.display = "block";
+  }
+
+  btn.disabled = false;
+  btn.textContent = "ส่งข้อมูล";
+});
 
 function fitCoverTitles(){
   document.querySelectorAll('.book-cover-title').forEach(el=>{
@@ -2767,6 +3043,9 @@ function showPage(page){
   document.getElementById('navToRewardsBtn').style.display = isRewards ? "none" : "inline-flex";
   document.getElementById('navToLibraryBtn').style.display = isRewards ? "inline-flex" : "none";
   document.getElementById('headerSub').textContent = isRewards ? REWARDS_SUB : LIBRARY_SUB;
+  /* แถบปุ่มหมวดหมู่หนังสือมีประโยชน์แค่ตอนอยู่หน้าห้องสมุดเท่านั้น
+     ซ่อนไว้ตอนอยู่หน้าแลกรางวัลเพื่อไม่ให้ดูรกเกินไป */
+  document.getElementById('categoryFilterBar').style.display = isRewards ? "none" : "flex";
   window.scrollTo({ top:0, behavior:"smooth" });
 }
 

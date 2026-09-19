@@ -207,6 +207,25 @@
     text-align:center;
   }
   .kpch-points-preview.insufficient{ color:#A3372A; background:rgba(163,55,42,0.1); }
+  .kpch-confirm-summary{
+    background:rgba(255,255,255,0.5);
+    border:1px solid rgba(42,29,18,0.15);
+    border-radius:6px;
+    padding:6px 18px;
+    margin-bottom:18px;
+  }
+  .kpch-confirm-row{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 0;
+    border-bottom:1px solid rgba(42,29,18,0.1);
+    font-size:13.5px;
+  }
+  .kpch-confirm-row:last-child{ border-bottom:none; }
+  .kpch-confirm-row .k{ color:var(--ink-soft); flex-shrink:0; }
+  .kpch-confirm-row .v{ color:var(--ink); font-weight:600; text-align:right; }
+  .kpch-confirm-row.highlight .v{ color:var(--brass); font-size:15px; }
   .login-error{
     font-size:12.5px;
     color:#A3372A;
@@ -1362,6 +1381,16 @@
     <p class="login-error" id="kpchError" style="display:none;"></p>
     <button class="btn" id="kpchSubmitBtn" type="button">ส่งข้อมูล</button>
     <button class="btn secondary" id="kpchCancelBtn" type="button">ยกเลิก</button>
+  </div>
+
+  <div class="modal wide" id="modalKpchConfirm" style="display:none;">
+    <div class="zone-tag">ยืนยันแลกแต้มเป็นชั่วโมง กพช.</div>
+    <h2 style="margin-bottom:6px;">ตรวจสอบข้อมูลก่อนยืนยัน</h2>
+    <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 16px;">กรุณาตรวจสอบความถูกต้องของข้อมูลอีกครั้ง เมื่อกดยืนยันแล้วระบบจะตัดแต้มทันทีและไม่สามารถยกเลิกได้</p>
+    <div class="kpch-confirm-summary" id="kpchConfirmSummary"></div>
+    <p class="login-error" id="kpchConfirmError" style="display:none;"></p>
+    <button class="btn" id="kpchConfirmSubmitBtn" type="button">ยืนยันการแลก</button>
+    <button class="btn secondary" id="kpchConfirmBackBtn" type="button">← กลับไปแก้ไขข้อมูล</button>
   </div>
 
   <div class="modal wide" id="modalChapters" style="display:none;">
@@ -2930,7 +2959,12 @@ function updateKpchPointsPreview(){
 document.getElementById('kpchHours').addEventListener('input', updateKpchPointsPreview);
 document.getElementById('kpchCancelBtn').addEventListener('click', closeKpchForm);
 
-document.getElementById('kpchSubmitBtn').addEventListener('click', async ()=>{
+/* เก็บข้อมูลที่กรอกไว้ชั่วคราวระหว่างขั้นตอน "ตรวจสอบก่อนยืนยัน" เพื่อให้ปุ่ม
+   ยืนยันการแลกในหน้าถัดไปรู้ว่าจะบันทึกอะไรบ้าง โดยไม่ต้องอ่านค่าจากฟอร์มซ้ำ
+   (เผื่อผู้อ่านย้อนกลับไปแก้ไขฟอร์มระหว่างทาง) */
+let pendingKpchRequest = null;
+
+document.getElementById('kpchSubmitBtn').addEventListener('click', ()=>{
   const name = document.getElementById('kpchName').value.trim();
   const studentId = document.getElementById('kpchStudentId').value.trim();
   const center = document.getElementById('kpchCenter').value;
@@ -2950,7 +2984,42 @@ document.getElementById('kpchSubmitBtn').addEventListener('click', async ()=>{
     return;
   }
 
-  const btn = document.getElementById('kpchSubmitBtn');
+  pendingKpchRequest = { name, studentId, center, hours, pointsNeeded };
+  openKpchConfirm();
+});
+
+function openKpchConfirm(){
+  const d = pendingKpchRequest;
+  const remaining = totalPoints - d.pointsNeeded;
+  document.getElementById('kpchConfirmSummary').innerHTML = `
+    <div class="kpch-confirm-row"><span class="k">ชื่อ-สกุล</span><span class="v">${escapeHtmlKpch(d.name)}</span></div>
+    <div class="kpch-confirm-row"><span class="k">รหัสนักศึกษา</span><span class="v">${escapeHtmlKpch(d.studentId)}</span></div>
+    <div class="kpch-confirm-row"><span class="k">ศูนย์ / ครูประจำกลุ่ม</span><span class="v">${escapeHtmlKpch(d.center)}</span></div>
+    <div class="kpch-confirm-row"><span class="k">จำนวนชั่วโมงที่แลก</span><span class="v">${d.hours} ชั่วโมง</span></div>
+    <div class="kpch-confirm-row highlight"><span class="k">แต้มที่ใช้ / แต้มคงเหลือหลังแลก</span><span class="v">-${d.pointsNeeded} แต้ม (เหลือ ${remaining} แต้ม)</span></div>
+  `;
+  document.getElementById('kpchConfirmError').style.display = "none";
+
+  document.getElementById('modalKpchForm').style.display = "none";
+  document.getElementById('modalKpchConfirm').style.display = "block";
+}
+
+function escapeHtmlKpch(s){
+  return String(s == null ? "" : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('kpchConfirmBackBtn').addEventListener('click', ()=>{
+  document.getElementById('modalKpchConfirm').style.display = "none";
+  document.getElementById('modalKpchForm').style.display = "block";
+});
+
+document.getElementById('kpchConfirmSubmitBtn').addEventListener('click', async ()=>{
+  if(!pendingKpchRequest) return;
+  const { name, studentId, center, hours, pointsNeeded } = pendingKpchRequest;
+  const errorEl = document.getElementById('kpchConfirmError');
+  errorEl.style.display = "none";
+
+  const btn = document.getElementById('kpchConfirmSubmitBtn');
   btn.disabled = true;
   btn.textContent = "กำลังส่งข้อมูล...";
 
@@ -2994,7 +3063,9 @@ document.getElementById('kpchSubmitBtn').addEventListener('click', async ()=>{
     } else {
       totalPoints = result.totalPoints;
       document.getElementById('pointsText').textContent = totalPoints;
-      closeKpchForm();
+      document.getElementById('modalKpchConfirm').style.display = "none";
+      document.getElementById('overlay').classList.remove('show');
+      pendingKpchRequest = null;
       showToast(`ส่งคำขอแลก ${hours} ชั่วโมงสำเร็จ (-${pointsNeeded} แต้ม) เจ้าหน้าที่จะดำเนินการบันทึกชั่วโมงให้ต่อไป`);
       renderRewards();
     }
@@ -3005,7 +3076,7 @@ document.getElementById('kpchSubmitBtn').addEventListener('click', async ()=>{
   }
 
   btn.disabled = false;
-  btn.textContent = "ส่งข้อมูล";
+  btn.textContent = "ยืนยันการแลก";
 });
 
 function fitCoverTitles(){

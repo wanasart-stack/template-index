@@ -3152,16 +3152,34 @@ document.getElementById('kpchConfirmSubmitBtn').addEventListener('click', async 
 =================================================================== */
 let pendingShippingOrder = null;
 
+/* แปลงค่า reward.cost ให้เป็นตัวเลขที่ใช้คำนวณได้จริงเสมอ ไม่ว่าจะถูกเก็บมาเป็น
+   ตัวเลข (ปกติ) หรือข้อความที่มีลูกน้ำคั่นหลักพันปนมา (เช่น "15,000" ที่แอดมิน
+   อาจพิมพ์ผิดตอนเพิ่มรางวัล) คืนค่า null ถ้าแปลงเป็นตัวเลขไม่ได้จริง ๆ (เช่น "-")
+   จุดนี้สำคัญมาก เพราะถ้าไม่กรองไว้ตรงนี้ การเช็คแต้มพอ/ไม่พอจะถูกข้ามไปเงียบ ๆ
+   และตอนตัดแต้มจริงจะได้ค่า NaN ไปเขียนทับ totalPoints ของนักอ่านคนนั้นเสียหาย */
+function normalizeRewardCost(cost){
+  if(typeof cost === "number" && !isNaN(cost)) return cost;
+  if(typeof cost === "string"){
+    const cleaned = cost.replace(/,/g, '').trim();
+    if(cleaned !== ""){
+      const n = Number(cleaned);
+      if(!isNaN(n)) return n;
+    }
+  }
+  return null;
+}
+
 function openShippingForm(reward){
-  if(typeof reward.cost === "number" && reward.cost > totalPoints){
-    showToast(`แต้มไม่พอสำหรับ "${reward.title}" (ต้องใช้ ${reward.cost} แต้ม แต่คุณมี ${totalPoints} แต้ม)`);
+  const cost = normalizeRewardCost(reward.cost);
+  if(cost !== null && cost > totalPoints){
+    showToast(`แต้มไม่พอสำหรับ "${reward.title}" (ต้องใช้ ${cost.toLocaleString('th-TH')} แต้ม แต่คุณมี ${totalPoints} แต้ม)`);
     return;
   }
-  pendingShippingOrder = { rewardKey: reward.key, rewardTitle: reward.title, cost: reward.cost };
+  pendingShippingOrder = { rewardKey: reward.key, rewardTitle: reward.title, cost: cost };
 
   document.getElementById('shippingFormTitle').textContent = `แลก "${reward.title}"`;
-  document.getElementById('shippingFormCost').textContent = typeof reward.cost === "number"
-    ? `ใช้ ${reward.cost} แต้ม (คุณมี ${totalPoints} แต้ม)`
+  document.getElementById('shippingFormCost').textContent = cost !== null
+    ? `ใช้ ${cost.toLocaleString('th-TH')} แต้ม (คุณมี ${totalPoints} แต้ม)`
     : `แต้มที่ใช้: ${reward.cost}`;
   document.getElementById('shipName').value = "";
   document.getElementById('shipAddress').value = "";

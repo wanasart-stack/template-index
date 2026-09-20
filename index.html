@@ -3506,7 +3506,7 @@ async function peekQrCodeRemote(code){
     if(!snap.exists) return { ok:false, message:"ไม่พบ QR Code นี้ในระบบ กรุณาขอ QR Code ใหม่จากเจ้าหน้าที่" };
     const data = snap.data();
     if(data.used) return { ok:false, message:"QR Code นี้ถูกใช้แลกรางวัลไปแล้ว" };
-    return { ok:true, points: data.points || 0 };
+    return { ok:true, points: data.points || 0, rewardTitle: data.rewardTitle || "" };
   }catch(err){
     console.warn("peekQrCodeRemote error:", err);
     return { ok:false, message:"ไม่สามารถตรวจสอบ QR Code ได้ กรุณาลองใหม่" };
@@ -3545,11 +3545,11 @@ async function redeemByQrCodeRemote(code){
       });
       const redemptionRef = currentUserDocRef.collection('redemptions').doc();
       tx.set(redemptionRef, {
-        rewardTitle: "แลกรางวัลด้วย QR Code", cost,
+        rewardTitle: codeData.rewardTitle || "แลกรางวัลด้วย QR Code", cost,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         totalPointsAfter: updated
       });
-      return { ok:true, totalPoints: updated, cost };
+      return { ok:true, totalPoints: updated, cost, rewardTitle: codeData.rewardTitle || "" };
     });
     return result;
   }catch(err){
@@ -4171,12 +4171,16 @@ document.getElementById('rewardConfirmBtn').addEventListener('click', async ()=>
     document.getElementById('pointsText').textContent = totalPoints;
 
     document.getElementById('rewardDoneTitle').textContent = "ยินดีด้วย !";
-    document.getElementById('rewardDoneDesc').textContent = `แลกรางวัลด้วย QR Code สำเร็จ (-${saveRes.cost} แต้ม)`;
+    document.getElementById('rewardDoneDesc').textContent = saveRes.rewardTitle
+      ? `แลก "${saveRes.rewardTitle}" สำเร็จ (-${saveRes.cost} แต้ม)`
+      : `แลกรางวัลด้วย QR Code สำเร็จ (-${saveRes.cost} แต้ม)`;
 
     document.getElementById('modalRewardConfirm').style.display = "none";
     document.getElementById('modalRewardDone').style.display = "block";
 
-    showToast(`-${saveRes.cost} แต้ม แลกรางวัลสำเร็จ`);
+    showToast(saveRes.rewardTitle
+      ? `-${saveRes.cost} แต้ม แลก "${saveRes.rewardTitle}" สำเร็จ`
+      : `-${saveRes.cost} แต้ม แลกรางวัลสำเร็จ`);
 
     pendingQrCode = null;
     renderRewards();
@@ -4336,9 +4340,10 @@ async function handleQrDetected(code){
   pendingQrCode = code;
   pendingRewardKey = null;
 
-  document.getElementById('rewardConfirmTitle').textContent = "แลกรางวัลด้วย QR Code";
-  document.getElementById('rewardConfirmDesc').textContent =
-    `ยืนยันแลกรางวัลนี้ด้วย ${peek.points} แต้มหรือไม่ ? แต้มของคุณจะเหลือ ${totalPoints - peek.points} แต้ม`;
+  document.getElementById('rewardConfirmTitle').textContent = peek.rewardTitle ? peek.rewardTitle : "แลกรางวัลด้วย QR Code";
+  document.getElementById('rewardConfirmDesc').textContent = peek.rewardTitle
+    ? `ยืนยันแลก "${peek.rewardTitle}" ด้วย ${peek.points} แต้มหรือไม่ ? แต้มของคุณจะเหลือ ${totalPoints - peek.points} แต้ม`
+    : `ยืนยันแลกรางวัลนี้ด้วย ${peek.points} แต้มหรือไม่ ? แต้มของคุณจะเหลือ ${totalPoints - peek.points} แต้ม`;
 
   document.getElementById('modalQrScan').style.display = "none";
   document.getElementById('modalRewardConfirm').style.display = "block";

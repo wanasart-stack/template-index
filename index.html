@@ -1358,6 +1358,13 @@
     <button class="btn" id="rewardDoneBtn">ปิด</button>
   </div>
 
+  <div class="modal" id="modalQrInsufficient" style="display:none;">
+    <div class="zone-tag" style="color:#A3372A;">แต้มไม่พอ</div>
+    <h2 style="margin-bottom:10px;">แต้มคงเหลือไม่พอแลก</h2>
+    <p id="qrInsufficientDesc">แต้มของคุณไม่พอสำหรับ QR Code นี้</p>
+    <button class="btn" id="qrInsufficientCloseBtn">ปิด</button>
+  </div>
+
   <div class="modal wide" id="modalQrScan" style="display:none;">
     <div class="zone-tag">แลกรางวัลด้วย QR Code</div>
     <h2 style="margin-bottom:14px;">สแกน QR Code จากเจ้าหน้าที่</h2>
@@ -4246,6 +4253,11 @@ document.getElementById('rewardDoneBtn').addEventListener('click', ()=>{
   document.getElementById('overlay').classList.remove('show');
 });
 
+document.getElementById('qrInsufficientCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('modalQrInsufficient').style.display = "none";
+  document.getElementById('overlay').classList.remove('show');
+});
+
 /* ---------------- QR Code scanning (กล้องฝั่งนักอ่าน) ---------------- */
 let qrScanStream = null;
 let qrScanRAF = null;
@@ -4334,6 +4346,20 @@ async function handleQrDetected(code){
   if(!peek.ok){
     showToast(peek.message || "QR Code ไม่ถูกต้อง");
     closeQrScanModal();
+    return;
+  }
+
+  /* เช็คแต้มคงเหลือก่อนเปิดหน้ายืนยันเสมอ ถ้าไม่พอ ห้ามเปิดหน้ายืนยันที่มีปุ่ม
+     "ยืนยันแลกรางวัล" เด็ดขาด (แม้ระบบฝั่งเซิร์ฟเวอร์จะกันการตัดแต้มติดลบไว้
+     อยู่แล้วก็ตาม) เพราะจะทำให้นักอ่านสับสนว่าทำไมกดยืนยันแล้วไม่สำเร็จ - ให้
+     เห็นข้อความแจ้งเตือนชัดเจนพร้อมปุ่ม "ปิด" ปุ่มเดียวแทนไปเลย */
+  if(peek.points > totalPoints){
+    closeQrScanModal();
+    document.getElementById('qrInsufficientDesc').textContent =
+      `ต้องใช้ ${peek.points} แต้ม แต่คุณมีแต้มคงเหลืออยู่ ${totalPoints} แต้ม (ขาดอีก ${peek.points - totalPoints} แต้ม)`;
+    hideAllModals();
+    document.getElementById('modalQrInsufficient').style.display = "block";
+    document.getElementById('overlay').classList.add('show');
     return;
   }
 

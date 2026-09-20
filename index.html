@@ -1529,25 +1529,6 @@ function nameToEmail(name){
 
 let currentUserDocRef = null;
 
-async function loadRemoteContent(){
-  try{
-    const snap = await db.collection('content').get();
-    snap.forEach(doc=>{
-      const rz = doc.data();
-      const b = books.find(bb=> bb.key === doc.id);
-      if(!b) return;
-      if(rz.title) b.title = rz.title;
-      if(rz.passage) b.passage = rz.passage;
-      if(Array.isArray(rz.questions) && rz.questions.length === b.questions.length){
-        b.questions = rz.questions.map(q=> ({ q: q.q, options: q.options, correct: q.correct }));
-      }
-    });
-    render();
-  }catch(err){
-    console.warn("loadRemoteContent error:", err);
-  }
-}
-
 /* ===================================================================
    CATEGORIES
 =================================================================== */
@@ -3388,6 +3369,14 @@ let currentUserName = "";
    flips the screen from login -> app content. Shared by password login
    and by the silent auto-login on page reload. */
 async function enterAppForUser(user, name){
+  /* รอให้ initApp() ที่ท้ายไฟล์ (โหลดหนังสือจาก Firestore + ตั้งค่า state
+     เริ่มต้นของทุกเล่มเป็น "ยังไม่ได้อ่าน") ทำงานเสร็จให้แน่ใจก่อนเสมอ ก่อนจะ
+     เอาผลอ่านจริงของนักอ่านคนนี้ (progress) มาใส่ทับ - ถ้าไม่รอตรงนี้ ในเครื่อง/
+     เน็ตที่ช้ากว่าปกติ initApp() อาจทำงานเสร็จ "หลัง" ขั้นตอนด้านล่างนี้ แล้ว
+     ไปเขียนทับ state กลับเป็น "ยังไม่ได้อ่าน" หมดทุกเล่มอีกรอบ (เคยเกิดบั๊กนี้
+     มาแล้วจริง ๆ ตอนอัปเดตไฟล์รอบก่อน) */
+  await appReadyPromise;
+
   currentUserDocRef = db.collection('users').doc(user.uid);
   let snap = await currentUserDocRef.get();
 
@@ -3434,7 +3423,10 @@ async function enterAppForUser(user, name){
   document.getElementById('greetingText').innerHTML = `ยินดีต้อนรับ นักอ่าน <strong>${currentUserName}</strong> <span class="logout-link" onclick="logoutUser()">ออกจากระบบ</span>`;
   document.getElementById('pointsText').textContent = totalPoints;
 
-  await loadRemoteContent();
+  /* ไม่ต้องเรียก loadRemoteContent() แล้ว (โค้ดเก่าจากก่อนย้ายหนังสือไปเก็บใน
+     Firestore เต็มรูปแบบ) เพราะ books มาจาก loadContentFromFirestore() ใน
+     appReadyPromise ที่รอไว้ข้างบนแล้วครบถ้วนอยู่แล้ว แค่ render() ใหม่อีกที
+     ด้วย state ที่เพิ่งใส่ผลอ่านของนักอ่านคนนี้เข้าไปก็พอ */
   render();
 }
 
@@ -4443,7 +4435,13 @@ function showToast(text){
   }, 2000);
 }
 
-(async function initApp(){
+/* appReadyPromise ให้โค้ดส่วนอื่น (โดยเฉพาะตอนล็อกอินสำเร็จ) "รอ" ให้ขั้นตอน
+   โหลดหนังสือ + ตั้งค่า state เริ่มต้นของ initApp() ทำเสร็จก่อนเสมอ ก่อนจะไป
+   แก้ไข state ต่อ (เช่นใส่ผลอ่านที่เคยอ่านผ่านแล้วของนักอ่านคนนั้นเข้าไป) -
+   ถ้าไม่รอแบบนี้ จะมีโอกาส (ขึ้นกับความเร็วเน็ต) ที่ initStateAndAttempts()
+   ทำงานเสร็จช้ากว่าตอนล็อกอิน แล้วไปเขียนทับ state ที่เพิ่งใส่ผลอ่านที่ถูก
+   ต้องไว้ให้กลายเป็น "ยังไม่ได้อ่าน" หมดทุกเล่มอีกที - เคยเป็นบั๊กจริงมาแล้ว */
+let appReadyPromise = (async function initApp(){
   await loadContentFromFirestore();
   initStateAndAttempts();
   buildShelfDeco();

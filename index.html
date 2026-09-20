@@ -3350,8 +3350,29 @@ function hideAllModals(){
   document.querySelectorAll('.modal').forEach(m => m.style.display = "none");
 }
 
-document.getElementById('navToRewardsBtn').addEventListener('click', ()=> showPage('rewards'));
+document.getElementById('navToRewardsBtn').addEventListener('click', ()=> goToRewardsPage());
 document.getElementById('navToLibraryBtn').addEventListener('click', ()=> showPage('library'));
+
+/* โหลดแคตตาล็อกรางวัลจาก Firestore "ใหม่ทุกครั้ง" ที่กดเข้าหน้านี้ แทนที่จะ
+   ใช้ค่าที่โหลดไว้ตอนเปิดเว็บครั้งแรกเพียงอย่างเดียว - กันปัญหาที่เคยเจอคือ
+   บางครั้งตอนเพิ่งล็อกอินหน้านี้จะยังไม่มีสินค้าครบ (ต้องรีเฟรชหน้าเว็บทั้งหน้า
+   หลายรอบกว่าจะเห็นครบ) และเผื่อกรณีแอดมินเพิ่งเพิ่ม/แก้ไขสินค้าไปขณะที่
+   นักอ่านเปิดหน้านี้ค้างอยู่ก่อนแล้ว ก็จะได้เห็นของล่าสุดเสมอโดยไม่ต้อง
+   รีเฟรชทั้งหน้าเอง */
+async function goToRewardsPage(){
+  showPage('rewards');
+  try{
+    const snap = await db.collection('rewardsCatalog').orderBy('order').get();
+    if(!snap.empty){
+      rewards = snap.docs.map(d => ({ key: d.id, ...d.data() }));
+      renderRewards();
+    }
+  }catch(err){
+    console.warn("refresh rewardsCatalog on nav error:", err);
+    /* โหลดใหม่ไม่สำเร็จ (เช่นเน็ตหลุดชั่วคราว) ก็ปล่อยให้ใช้ข้อมูลเดิมที่มีอยู่
+       ไปก่อน ไม่ทำให้หน้าเว็บพัง */
+  }
+}
 
 /* ---------------- Login & App Logic ---------------- */
 let currentBookKey = null;

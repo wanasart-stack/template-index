@@ -1937,9 +1937,9 @@ const DEFAULT_BOOKS = [
     key:"novel_series1", categoryKey:"novel", title:"เงาจันทร์ที่ปลายฟ้า (นวนิยายรายตอน)", blurb:"นวนิยายรายตอน ความรักและความลับใต้แสงจันทร์", featured:true, color:"#5A2A4C",
     /* หนังสือเล่มยาวที่แบ่งเป็นหลายตอน: ใช้ array "chapters" แทนการใส่ passage/questions
        เดี่ยว ๆ แบบหนังสือทั่วไปด้านบน แต่ละตอนมี title, passage, questions (5 ข้อ) ของตัวเอง
-       และผู้อ่านจะได้ 10 แต้มทุกครั้งที่ผ่านแบบทดสอบท้ายตอนนั้น ๆ (เหมือนแต้มต่อเล่มปกติ)
-       เพิ่มตอนใหม่ได้ไม่จำกัดจำนวน (เช่น 10 กว่าตอน) โดย copy รูปแบบ object ด้านล่างต่อท้าย
-       array นี้ได้เลย ไม่ต้องแก้โค้ดส่วนอื่น */
+       และมี field "points" กำหนดแต้มที่จะได้ต่อตอนได้เอง (ถ้าไม่ใส่ไว้ ระบบจะให้ 10 แต้มเป็น
+       ค่าเริ่มต้นให้อัตโนมัติ) เพิ่มตอนใหม่ได้ไม่จำกัดจำนวน (เช่น 10 กว่าตอน) โดย copy รูปแบบ
+       object ด้านล่างต่อท้าย array นี้ได้เลย ไม่ต้องแก้โค้ดส่วนอื่น */
     chapters:[
       {
         title:"จดหมายลึกลับ",
@@ -2547,11 +2547,12 @@ window.seedContentToFirestore = async function(){
         order: i
       };
       if(b.chapters){
-        data.chapters = b.chapters.map(ch=>({ title: ch.title, passage: ch.passage, questions: ch.questions, image: ch.image || "" }));
+        data.chapters = b.chapters.map(ch=>({ title: ch.title, passage: ch.passage, questions: ch.questions, image: ch.image || "", points: (typeof ch.points === "number" && ch.points > 0) ? ch.points : 10 }));
       } else {
         data.passage = b.passage;
         data.questions = b.questions;
         data.image = b.image || "";
+        data.points = (typeof b.points === "number" && b.points > 0) ? b.points : 10;
       }
       batch.set(ref, data);
     });
@@ -2600,6 +2601,7 @@ function getUnit(key){
       passage: ch.passage,
       questions: ch.questions,
       image: ch.image || "",
+      points: (typeof ch.points === "number" && ch.points > 0) ? ch.points : 10,
       categoryKey: book.categoryKey,
       isChapter: true,
       parentBookKey: book.key,
@@ -2614,6 +2616,7 @@ function getUnit(key){
     passage: book.passage,
     questions: book.questions,
     image: book.image || "",
+    points: (typeof book.points === "number" && book.points > 0) ? book.points : 10,
     categoryKey: book.categoryKey,
     isChapter: false
   };
@@ -3912,7 +3915,7 @@ function openModal(bookKey){
     attemptNote.className = "attempt-note";
     startBtn.style.display = "none";
   } else {
-    readyDesc.textContent = "ท่านพร้อมที่จะตอบคำถามเราหรือไม่ ? เมื่อเริ่มแล้วจะมีคำถามทั้งหมด 5 ข้อ";
+    readyDesc.textContent = `ท่านพร้อมที่จะตอบคำถามเราหรือไม่ ? เมื่อเริ่มแล้วจะมีคำถามทั้งหมด 5 ข้อ ตอบถูกครบทุกข้อรับ ${unit.points} แต้ม`;
     if(!isDone){
       attemptNote.textContent = `ทำแบบทดสอบได้ทั้งหมด ${MAX_ATTEMPTS} ครั้ง (ใช้ไปแล้ว ${usedAttempts} ครั้ง)`;
       attemptNote.className = "attempt-note";
@@ -4056,7 +4059,7 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
 
   const passed = score === b.questions.length;
   const alreadyDone = state[b.key] === "done";
-  const earnedPoints = (passed && !alreadyDone) ? 10 : 0;
+  const earnedPoints = (passed && !alreadyDone) ? b.points : 0;
 
   const newTotal = await saveQuizResultRemote(b.key, earnedPoints, passed);
 

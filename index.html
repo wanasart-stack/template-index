@@ -796,6 +796,12 @@
     -webkit-box-orient:vertical;
     overflow:hidden;
   }
+  .book-points{
+    margin-top:4px;
+    font-size:11px;
+    font-weight:700;
+    color:var(--brass);
+  }
   .new-badge{
     position:absolute;
     top:-6px;
@@ -1097,6 +1103,7 @@
     white-space:nowrap;
   }
   .chapter-status{ font-size:11.5px; color:var(--ink-soft); }
+  .chapter-row-points{ font-size:11.5px; font-weight:700; color:var(--brass); margin-right:8px; }
   .chapter-status.done{ color:#2F5D4E; font-weight:600; }
   .chapter-status.exhausted{ color:#A3372A; font-weight:600; }
   .chapter-open-btn{
@@ -1562,8 +1569,12 @@ const categories = [
     icon:`<path d="M12 21v-7.5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M12 13.5c0-3.3-2.4-5.8-5.7-5.8 0 3.3 2.4 5.8 5.7 5.8z" fill="#fff"/><path d="M12 13.5c0-3.8 2.9-6.7 6.7-6.7 0 3.8-2.9 6.7-6.7 6.7z" fill="#fff"/><ellipse cx="12" cy="20.8" rx="4.6" ry="1.1" fill="#fff" opacity="0.4"/>`
   },
   {
-    key:"travel", title:"ท่องเที่ยว & วัฒนธรรม", badge:"#2C7DA0",
+    key:"travel", title:"การท่องเที่ยว", badge:"#2C7DA0",
     icon:`<circle cx="12" cy="12" r="8.5" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M15.5 8.5l-2.2 5-5 2.2 2.2-5z" fill="#fff"/><circle cx="12" cy="12" r="1.1" fill="#fff"/>`
+  },
+  {
+    key:"religion", title:"ศาสนา & วัฒนธรรม", badge:"#B4903F",
+    icon:`<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="2" fill="#fff"/><line x1="12" y1="4" x2="12" y2="20" stroke="#fff" stroke-width="1.4"/><line x1="4" y1="12" x2="20" y2="12" stroke="#fff" stroke-width="1.4"/><line x1="6.3" y1="6.3" x2="17.7" y2="17.7" stroke="#fff" stroke-width="1.4"/><line x1="17.7" y1="6.3" x2="6.3" y2="17.7" stroke="#fff" stroke-width="1.4"/>`
   }
 ];
 
@@ -2670,6 +2681,15 @@ function handleBookCoverImgError(imgEl){
   imgEl.replaceWith(titleDiv);
 }
 
+/* รวมแต้มทั้งหมดที่จะได้จากหนังสือเล่มนี้ - ถ้าเป็นหนังสือแบบรายตอน จะรวมแต้ม
+   ของทุกตอนเข้าด้วยกัน (แต่ละตอนอาจได้แต้มไม่เท่ากัน ตามที่แอดมินกำหนดไว้) */
+function getBookTotalPoints(b){
+  if(b.chapters){
+    return b.chapters.reduce((sum, ch) => sum + ((typeof ch.points === "number" && ch.points > 0) ? ch.points : 10), 0);
+  }
+  return (typeof b.points === "number" && b.points > 0) ? b.points : 10;
+}
+
 function buildBookCard(b){
   const st = state[b.key];
   const div = document.createElement('div');
@@ -2710,6 +2730,7 @@ function buildBookCard(b){
     </div>
     <div class="book-title">${b.title}</div>
     ${b.blurb ? `<div class="book-blurb">${b.blurb}</div>` : ""}
+    <div class="book-points">🏆 ${getBookTotalPoints(b)} แต้ม</div>
     <div class="book-status">${statusLabel}</div>
   `;
   div.addEventListener('click', ()=> b.chapters ? openChapterList(b.key) : openModal(b.key));
@@ -3864,11 +3885,13 @@ function openChapterList(bookKey){
         ? `<span class="chapter-status exhausted">ครบจำนวนครั้งแล้ว</span>`
         : `<span class="chapter-status">ยังไม่อ่าน</span>`;
     const btnLabel = isDone ? "อ่านอีกครั้ง" : "เริ่มอ่าน";
+    const chPoints = (typeof ch.points === "number" && ch.points > 0) ? ch.points : 10;
     return `
       <div class="chapter-row">
         <div class="chapter-row-left">
           <div class="chapter-row-num">ตอนที่ ${idx+1}</div>
           <div class="chapter-row-title">${ch.title}</div>
+          <span class="chapter-row-points">🏆 ${chPoints} แต้ม</span>
           ${statusHtml}
         </div>
         <button class="btn chapter-open-btn" type="button" data-chapter-key="${chKey}">${btnLabel}</button>

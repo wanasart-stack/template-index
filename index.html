@@ -922,6 +922,41 @@
     max-height:230px;
     overflow-y:auto;
   }
+  .passage-box p{ margin:0 0 14px; }
+  .passage-box p:last-child{ margin-bottom:0; }
+  .passage-box .passage-h1{
+    font-family:'Sarabun', sans-serif;
+    font-weight:700;
+    font-size:19px;
+    color:var(--wood-dark);
+    margin:18px 0 10px;
+  }
+  .passage-box .passage-h1:first-child{ margin-top:0; }
+  .passage-box .passage-h2{
+    font-family:'Sarabun', sans-serif;
+    font-weight:700;
+    font-size:16.5px;
+    color:var(--wood-dark);
+    margin:16px 0 8px;
+  }
+  .passage-box .passage-h2:first-child{ margin-top:0; }
+  .passage-box .passage-h3{
+    font-family:'Sarabun', sans-serif;
+    font-weight:700;
+    font-size:14.5px;
+    color:var(--brass);
+    margin:14px 0 6px;
+  }
+  .passage-box .passage-h3:first-child{ margin-top:0; }
+  .passage-box .passage-inline-img{
+    display:block;
+    width:100%;
+    max-height:260px;
+    object-fit:cover;
+    border-radius:6px;
+    margin:14px 0;
+    box-shadow:0 4px 10px rgba(0,0,0,0.12);
+  }
 
   .quiz-progress{
     font-size:12.5px;
@@ -3979,12 +4014,66 @@ document.getElementById('startBtn').addEventListener('click', ()=>{
   startQuiz();
 });
 
+/* ===================================================================
+   ตัวแปลงข้อความเนื้อเรื่อง (passage markup) ให้เป็น HTML
+   แอดมินพิมพ์แท็กง่าย ๆ ในช่องเนื้อเรื่องได้เอง (หรือใช้ปุ่มลัดในหน้าแอดมิน
+   ช่วยแทรกให้) รองรับ:
+     [h1]...[/h1]  [h2]...[/h2]  [h3]...[/h3]   -> หัวข้อขนาดใหญ่/กลาง/เล็ก
+     [color=#RRGGBB]...[/color]                  -> เปลี่ยนสีข้อความ
+     [img]ชื่อไฟล์.jpg[/img]                      -> แทรกรูปภาพ (บรรทัดของตัวเอง)
+   ข้อความส่วนที่เหลือ escape เป็น HTML ปลอดภัยเสมอ ป้องกันไม่ให้พังหน้าเว็บ
+   แม้พิมพ์อักขระพิเศษเข้ามาก็ตาม */
+function escapePassageHtml(s){
+  return String(s == null ? "" : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function processPassageInline(rawLine){
+  let escaped = escapePassageHtml(rawLine);
+  escaped = escaped.replace(/\[color=(#[0-9A-Fa-f]{6})\]([\s\S]*?)\[\/color\]/g, '<span style="color:$1">$2</span>');
+  return escaped;
+}
+function parsePassageMarkup(text){
+  const lines = String(text || "").split('\n');
+  const htmlParts = [];
+  let paragraphBuffer = [];
+
+  function flushParagraph(){
+    if(paragraphBuffer.length > 0){
+      htmlParts.push(`<p>${paragraphBuffer.join('<br>')}</p>`);
+      paragraphBuffer = [];
+    }
+  }
+
+  lines.forEach(rawLine=>{
+    const line = rawLine.trim();
+    if(line === ""){ flushParagraph(); return; }
+    let m;
+    if((m = line.match(/^\[h1\](.*)\[\/h1\]$/))){
+      flushParagraph();
+      htmlParts.push(`<div class="passage-h1">${processPassageInline(m[1])}</div>`);
+    } else if((m = line.match(/^\[h2\](.*)\[\/h2\]$/))){
+      flushParagraph();
+      htmlParts.push(`<div class="passage-h2">${processPassageInline(m[1])}</div>`);
+    } else if((m = line.match(/^\[h3\](.*)\[\/h3\]$/))){
+      flushParagraph();
+      htmlParts.push(`<div class="passage-h3">${processPassageInline(m[1])}</div>`);
+    } else if((m = line.match(/^\[img\](.*)\[\/img\]$/))){
+      flushParagraph();
+      const filename = m[1].trim();
+      htmlParts.push(`<img src="${escapePassageHtml(filename)}" class="passage-inline-img" alt="" onerror="this.style.display='none';">`);
+    } else {
+      paragraphBuffer.push(processPassageInline(line));
+    }
+  });
+  flushParagraph();
+  return htmlParts.join('');
+}
+
 function startQuiz(){
   const b = getUnit(currentBookKey);
   const cat = categories.find(c=>c.key === b.categoryKey);
   document.getElementById('quizZoneTag').textContent = cat.title;
   document.getElementById('quizTitle').textContent = b.title;
-  document.getElementById('passageBox').textContent = b.passage;
+  document.getElementById('passageBox').innerHTML = parsePassageMarkup(b.passage);
 
   const imgWrap = document.getElementById('passageImageWrap');
   const imgEl = document.getElementById('passageImage');

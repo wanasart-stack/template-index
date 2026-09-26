@@ -4020,6 +4020,7 @@ document.getElementById('startBtn').addEventListener('click', ()=>{
    ช่วยแทรกให้) รองรับ:
      [h1]...[/h1]  [h2]...[/h2]  [h3]...[/h3]   -> หัวข้อขนาดใหญ่/กลาง/เล็ก
      [color=#RRGGBB]...[/color]                  -> เปลี่ยนสีข้อความ
+     [size=NN]...[/size]                          -> กำหนดขนาดตัวอักษรเป็นพิกเซลเอง (เช่น [size=24])
      [img]ชื่อไฟล์.jpg[/img]                      -> แทรกรูปภาพ (บรรทัดของตัวเอง)
    ข้อความส่วนที่เหลือ escape เป็น HTML ปลอดภัยเสมอ ป้องกันไม่ให้พังหน้าเว็บ
    แม้พิมพ์อักขระพิเศษเข้ามาก็ตาม */
@@ -4029,6 +4030,7 @@ function escapePassageHtml(s){
 function processPassageInline(rawLine){
   let escaped = escapePassageHtml(rawLine);
   escaped = escaped.replace(/\[color=(#[0-9A-Fa-f]{6})\]([\s\S]*?)\[\/color\]/g, '<span style="color:$1">$2</span>');
+  escaped = escaped.replace(/\[size=(\d{1,3})\]([\s\S]*?)\[\/size\]/g, '<span style="font-size:$1px">$2</span>');
   return escaped;
 }
 function parsePassageMarkup(text){

@@ -401,6 +401,21 @@
     border-color:var(--wood-dark);
     color:var(--cream);
   }
+  .cat-filter-subbar{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:8px;
+    flex-basis:100%;
+    margin-top:6px;
+    padding-top:12px;
+    border-top:1px dashed rgba(36,48,31,0.22);
+  }
+  .cat-filter-sub{
+    font-size:11.5px;
+    padding:7px 14px;
+    background:rgba(255,255,255,0.4);
+  }
 
   .points-toast{
     position:fixed;
@@ -1614,8 +1629,48 @@ const categories = [
   {
     key:"religion", title:"ศาสนา & วัฒนธรรม", badge:"#B4903F",
     icon:`<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="2" fill="#fff"/><line x1="12" y1="4" x2="12" y2="20" stroke="#fff" stroke-width="1.4"/><line x1="4" y1="12" x2="20" y2="12" stroke="#fff" stroke-width="1.4"/><line x1="6.3" y1="6.3" x2="17.7" y2="17.7" stroke="#fff" stroke-width="1.4"/><line x1="17.7" y1="6.3" x2="6.3" y2="17.7" stroke="#fff" stroke-width="1.4"/>`
+  },
+  {
+    key:"textbook", title:"หนังสือเรียน", badge:"#3D5A80",
+    icon:`<path d="M12 3L2 8l10 5 8-4v6h1.5V8z" fill="#fff"/><path d="M6 11.5v4c0 1.5 2.7 3 6 3s6-1.5 6-3v-4l-6 3z" fill="#fff" opacity="0.85"/>`,
+    children:[
+      { key:"textbook_primary", title:"ประถมศึกษา", badge:"#4A6FA5" },
+      { key:"textbook_lower_sec", title:"มัธยมศึกษาตอนต้น", badge:"#3D5A80" },
+      { key:"textbook_upper_sec", title:"มัธยมศึกษาตอนปลาย", badge:"#2E4459" }
+    ]
   }
 ];
+
+/* ใช้เมื่อไล่ดูหนังสือทุกหมวด ("ทั้งหมด") หรือเมื่อต้องการหมวดหมู่ระดับ
+   "ใบล่างสุด" (leaf) เท่านั้น - หมวดที่มี children (เช่น "หนังสือเรียน") จะถูก
+   คลี่ออกมาเป็นหมวดย่อยแต่ละอันแทนตัวมันเอง เพราะตัวหมวดแม่เองไม่มีหนังสือ
+   ของตัวเองโดยตรง มีแต่หนังสือที่อยู่ในหมวดย่อย */
+function getFlatCategories(){
+  const flat = [];
+  categories.forEach(cat=>{
+    if(cat.children){
+      cat.children.forEach(child=> flat.push({ ...child, icon: cat.icon, parentKey: cat.key, parentTitle: cat.title }));
+    } else {
+      flat.push(cat);
+    }
+  });
+  return flat;
+}
+
+/* หาหมวดหมู่จาก key ไม่ว่าจะเป็นหมวดระดับบนสุดหรือหมวดย่อยที่ซ้อนอยู่ใน
+   children ก็ตาม ใช้แทน categories.find(...) ตรง ๆ ทุกจุดที่ต้องการโชว์ชื่อ/
+   สี/ไอคอนของหมวดหมู่ตาม categoryKey ของหนังสือ (เพราะหนังสือแต่ละเล่มจะถูก
+   ติด categoryKey เป็น key ของหมวดย่อย ไม่ใช่ key ของหมวดแม่) */
+function findCategoryByKey(key){
+  for(const cat of categories){
+    if(cat.key === key) return cat;
+    if(cat.children){
+      const child = cat.children.find(c=> c.key === key);
+      if(child) return { ...child, icon: cat.icon };
+    }
+  }
+  return null;
+}
 
 /* ===================================================================
    REWARDS - redeemable with points
@@ -2778,18 +2833,53 @@ function buildBookCard(b){
 
 /* ---------------- Render library ---------------- */
 /* null = แสดงทุกหมวดหมู่เรียงกันแบบเดิม (พร้อมแถวเล่มแนะนำ) ถ้าเลือกหมวดใด
-   หมวดหนึ่ง จะสลับไปแสดงเฉพาะหมวดนั้นหมวดเดียว เหมือนกับการสลับไปหน้าแลกรางวัล */
+   หมวดหนึ่ง จะสลับไปแสดงเฉพาะหมวดนั้นหมวดเดียว เหมือนกับการสลับไปหน้าแลกรางวัล
+   activeCategoryKey เป็น key ของหมวด "ใบล่างสุด" เสมอ (เช่น "textbook_primary")
+   ไม่ใช่ key ของหมวดแม่ - expandedParentKey แยกต่างหาก เก็บว่าหมวดแม่ไหน
+   กำลังกางเมนูย่อยค้างอยู่ (กดพับ/กางได้ ไม่เกี่ยวกับหมวดที่เลือกดูอยู่) */
 let activeCategoryKey = null;
+let expandedParentKey = null;
 
 function renderCategoryFilterBar(){
   const bar = document.getElementById('categoryFilterBar');
   const allBtn = `<button type="button" class="cat-filter-btn${activeCategoryKey === null ? ' active' : ''}" data-cat="">📚 ทั้งหมด</button>`;
-  const catBtns = categories.map(cat=>
-    `<button type="button" class="cat-filter-btn${activeCategoryKey === cat.key ? ' active' : ''}" data-cat="${cat.key}">${cat.title}</button>`
-  ).join('');
+
+  const catBtns = categories.map(cat=>{
+    if(cat.children){
+      /* หมวดแม่ที่มีเมนูย่อย: ไฮไลต์ค้างไว้ถ้ากำลังดูหนังสือในหมวดย่อยข้อ
+         ใดข้อหนึ่งอยู่ หรือกำลังกางเมนูย่อยอยู่ (แม้ยังไม่ได้เลือกหมวดย่อยก็ตาม) */
+      const childKeys = cat.children.map(c=>c.key);
+      const isActive = expandedParentKey === cat.key || childKeys.includes(activeCategoryKey);
+      return `<button type="button" class="cat-filter-btn cat-filter-parent${isActive ? ' active' : ''}" data-parent="${cat.key}">${cat.title} ${expandedParentKey === cat.key ? '▴' : '▾'}</button>`;
+    }
+    return `<button type="button" class="cat-filter-btn${activeCategoryKey === cat.key ? ' active' : ''}" data-cat="${cat.key}">${cat.title}</button>`;
+  }).join('');
+
   bar.innerHTML = allBtn + catBtns;
 
-  bar.querySelectorAll('.cat-filter-btn').forEach(btn=>{
+  /* แถวเมนูย่อย (พับ/กาง) ของหมวดแม่ที่กำลังเปิดอยู่ วางไว้เป็นแถวที่ 2 ต่อ
+     ท้ายแถวหมวดหมู่หลัก แสดงเฉพาะตอนมีหมวดแม่ถูกกางอยู่เท่านั้น */
+  if(expandedParentKey){
+    const parentCat = categories.find(c=> c.key === expandedParentKey);
+    if(parentCat && parentCat.children){
+      const subBar = document.createElement('div');
+      subBar.className = "cat-filter-subbar";
+      subBar.innerHTML = parentCat.children.map(child=>
+        `<button type="button" class="cat-filter-btn cat-filter-sub${activeCategoryKey === child.key ? ' active' : ''}" data-cat="${child.key}">${child.title}</button>`
+      ).join('');
+      bar.appendChild(subBar);
+    }
+  }
+
+  bar.querySelectorAll('.cat-filter-parent').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.parent;
+      expandedParentKey = (expandedParentKey === key) ? null : key;
+      renderCategoryFilterBar();
+    });
+  });
+
+  bar.querySelectorAll('[data-cat]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       activeCategoryKey = btn.dataset.cat || null;
       render();
@@ -2836,9 +2926,10 @@ function render(){
     }
   }
 
+  const flatCats = getFlatCategories();
   const categoriesToShow = activeCategoryKey === null
-    ? categories
-    : categories.filter(c=> c.key === activeCategoryKey);
+    ? flatCats
+    : flatCats.filter(c=> c.key === activeCategoryKey);
 
   categoriesToShow.forEach(cat=>{
     const catBooks = books.filter(b=>b.categoryKey === cat.key);
@@ -2854,7 +2945,7 @@ function render(){
         <div class="shelf-icon-badge" style="background:${cat.badge}">
           <svg class="shelf-icon" viewBox="0 0 24 24">${cat.icon}</svg>
         </div>
-        <h2>${cat.title}</h2>
+        <h2>${cat.parentTitle ? cat.parentTitle + " - " : ""}${cat.title}</h2>
       </div>
       <div class="shelf-count">อ่านแล้ว ${catDone}/${catBooks.length} เล่ม</div>
     `;
@@ -3904,7 +3995,7 @@ function openChapterList(bookKey){
   clearTimeout(window._autoExitTimer);
   chapterListReturnKey = null;
   const b = books.find(x=> x.key === bookKey);
-  const cat = categories.find(c=> c.key === b.categoryKey);
+  const cat = findCategoryByKey(b.categoryKey);
 
   document.getElementById('chapterListZoneTag').textContent = cat.title;
   document.getElementById('chapterListTitle').textContent = b.title;
@@ -3959,7 +4050,7 @@ function openModal(bookKey){
   clearTimeout(window._autoExitTimer);
   currentBookKey = bookKey;
   const unit = getUnit(bookKey);
-  const cat = categories.find(c=>c.key === unit.categoryKey);
+  const cat = findCategoryByKey(unit.categoryKey);
   document.getElementById('readyZoneTag').textContent = cat.title;
   document.getElementById('readyTitle').textContent = unit.title;
 
@@ -4076,7 +4167,7 @@ function parsePassageMarkup(text){
 
 function startQuiz(){
   const b = getUnit(currentBookKey);
-  const cat = categories.find(c=>c.key === b.categoryKey);
+  const cat = findCategoryByKey(b.categoryKey);
   document.getElementById('quizZoneTag').textContent = cat.title;
   document.getElementById('quizTitle').textContent = b.title;
   document.getElementById('passageBox').innerHTML = parsePassageMarkup(b.passage);

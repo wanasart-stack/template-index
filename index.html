@@ -2883,7 +2883,10 @@ function renderCategoryFilterBar(){
     btn.addEventListener('click', ()=>{
       activeCategoryKey = btn.dataset.cat || null;
       render();
-      window.scrollTo({ top:0, behavior:"smooth" });
+      /* เลื่อนไปโชว์ตัวหนังสือที่กรองไว้เลย ไม่เลื่อนขึ้นสุดหน้าเว็บ (ซึ่งจะ
+         โชว์แค่ส่วนหัว+แถบหมวดหมู่ที่เพิ่งกดไปแล้ว ไม่เห็นหนังสือทันที) */
+      const libraryRoot = document.getElementById('libraryRoot');
+      if(libraryRoot) libraryRoot.scrollIntoView({ behavior:"smooth", block:"start" });
     });
   });
 }

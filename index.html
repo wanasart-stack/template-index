@@ -1155,6 +1155,23 @@
     white-space:nowrap;
     box-shadow:0 2px 4px rgba(0,0,0,0.25);
   }
+  .lock-badge{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:rgba(0,0,0,0.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:19px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+  }
+  .chapter-row.chapter-locked{ opacity:0.75; }
+  .chapter-open-btn:disabled{ opacity:0.45; cursor:not-allowed; }
   .chapter-list-progress{
     font-size:12.5px;
     font-weight:600;
@@ -2795,9 +2812,29 @@ function initStateAndAttempts(){
   });
 }
 
-/* attempts[key] = number of FAILED tries so far this session */
+/* attempts[key] = number of FAILED tries so far this session (รีเซ็ตทุกครั้ง
+   ที่รีเฟรชหน้า ใช้แค่โชว์ "เหลืออีกกี่ครั้ง" ระหว่างทำแบบทดสอบ) ส่วนการล็อก
+   จริง 15 วันเก็บแยกไว้ที่ "locks" ซึ่งโหลดมาจาก Firestore ตอนล็อกอิน คงอยู่
+   ถาวรข้ามเซสชัน/อุปกรณ์ ไม่หายแม้รีเฟรชหรือออกจากระบบแล้วกลับเข้ามาใหม่ */
 const MAX_ATTEMPTS = 3;
+const LOCK_DURATION_MS = 15 * 24 * 60 * 60 * 1000;
 let attempts = {};
+/* locks[key] = เวลา (timestamp เป็นมิลลิวินาที) ที่จะปลดล็อก ถ้าเวลาปัจจุบัน
+   ยังไม่ถึงค่านี้ แปลว่ายังล็อกอยู่ */
+let locks = {};
+
+/* คืนค่า timestamp ที่จะปลดล็อก ถ้ายังล็อกอยู่จริง (ยังไม่ถึงเวลาปลดล็อก)
+   คืนค่า null ถ้าไม่เคยล็อก หรือล็อกหมดอายุแล้ว (ปลดล็อกอัตโนมัติ แค่เช็ค
+   เวลาเทียบกันเฉย ๆ ไม่ต้องมีการ "กดปลดล็อก" ใด ๆ) */
+function getLockUntil(key){
+  const until = locks[key];
+  if(!until) return null;
+  if(Date.now() >= until) return null;
+  return until;
+}
+function formatLockUntilDate(timestampMillis){
+  return new Date(timestampMillis).toLocaleDateString('th-TH', { day:'numeric', month:'long', year:'numeric' });
+}
 
 /* ---------------- Shelf decoration in header ---------------- */
 function buildShelfDeco(){
@@ -2838,6 +2875,11 @@ function buildBookCard(b){
   const div = document.createElement('div');
   div.className = `book ${st}`;
 
+  /* หนังสือเล่มเดียวจบที่ถูกล็อกจากการตอบผิดครบ 3 ครั้ง (หนังสือแบบรายตอน
+     ไม่ล็อกทั้งเล่ม แต่ล็อกเฉพาะตอนที่ตอบผิด ไปดูสถานะล็อกได้ในหน้ารายการตอน
+     แทน) */
+  const bookLockUntil = (!b.chapters && st !== "done") ? getLockUntil(b.key) : null;
+
   let statusLabel, coverBadge;
   if(b.chapters){
     const doneCh = b.chapters.filter((ch, idx)=> state[chapterKey(b.key, idx)] === "done").length;
@@ -2845,6 +2887,9 @@ function buildBookCard(b){
     coverBadge = st === "done"
       ? `<div class="done-badge">${checkSvg.replace('width="30" height="30"','width="14" height="14"')}</div>`
       : `<div class="chapter-badge">${b.chapters.length} ตอน</div>`;
+  } else if(bookLockUntil){
+    statusLabel = `🔒 ล็อกถึง ${formatLockUntilDate(bookLockUntil)}`;
+    coverBadge = `<div class="lock-badge">🔒</div>`;
   } else {
     statusLabel = st === "done" ? "อ่านแล้ว" : "ยังไม่ได้อ่าน";
     coverBadge = st === "done" ? `<div class="done-badge">${checkSvg.replace('width="30" height="30"','width="14" height="14"')}</div>` : "";
@@ -2876,7 +2921,13 @@ function buildBookCard(b){
     <div class="book-points">🏆 ${getBookTotalPoints(b)} แต้ม</div>
     <div class="book-status">${statusLabel}</div>
   `;
-  div.addEventListener('click', ()=> b.chapters ? openChapterList(b.key) : openModal(b.key));
+  div.addEventListener('click', ()=>{
+    if(bookLockUntil){
+      showToast(`🔒 เล่มนี้ถูกล็อกถึงวันที่ ${formatLockUntilDate(bookLockUntil)} เนื่องจากตอบผิดครบ 3 ครั้ง`);
+      return;
+    }
+    b.chapters ? openChapterList(b.key) : openModal(b.key);
+  });
   return div;
 }
 
@@ -3075,7 +3126,8 @@ function renderRewards(){
   document.getElementById('openKpchFormBtn').addEventListener('click', openKpchForm);
 
   /* ---------- ส่วนที่ 2: แลกแต้มเป็นสินค้าบริโภค (แลกด้วยการสแกน QR ที่ศูนย์) ---------- */
-  const consumables = rewards.filter(r=> (r.rewardType || "consumable") !== "durable");
+  const consumables = rewards.filter(r=> (r.rewardType || "consumable") !== "durable")
+    .sort((a, b)=> rewardSortValue(a) - rewardSortValue(b));
   if(consumables.length > 0){
     const consumeSection = document.createElement('div');
     consumeSection.className = "rewards-goods-section";
@@ -3099,7 +3151,8 @@ function renderRewards(){
   }
 
   /* ---------- ส่วนที่ 3: แลกแต้มเป็นสินค้าอุปโภค (กรอกที่อยู่เพื่อจัดส่ง) ---------- */
-  const durables = rewards.filter(r=> r.rewardType === "durable");
+  const durables = rewards.filter(r=> r.rewardType === "durable")
+    .sort((a, b)=> rewardSortValue(a) - rewardSortValue(b));
   if(durables.length > 0){
     const durableSection = document.createElement('div');
     durableSection.className = "rewards-goods-section";
@@ -3351,6 +3404,12 @@ let pendingShippingOrder = null;
    อาจพิมพ์ผิดตอนเพิ่มรางวัล) คืนค่า null ถ้าแปลงเป็นตัวเลขไม่ได้จริง ๆ (เช่น "-")
    จุดนี้สำคัญมาก เพราะถ้าไม่กรองไว้ตรงนี้ การเช็คแต้มพอ/ไม่พอจะถูกข้ามไปเงียบ ๆ
    และตอนตัดแต้มจริงจะได้ค่า NaN ไปเขียนทับ totalPoints ของนักอ่านคนนั้นเสียหาย */
+/* ค่าที่ใช้เรียงรางวัลจากแต้มน้อยไปมาก - รางวัลที่ยังไม่กำหนดตัวเลขแต้ม
+   ชัดเจน (เช่น "-") จะถูกจัดไปอยู่ท้ายสุดเสมอ ไม่ปนกับรางวัลที่มีราคาจริง */
+function rewardSortValue(r){
+  const n = normalizeRewardCost(r.cost);
+  return n === null ? Infinity : n;
+}
 function normalizeRewardCost(cost){
   if(typeof cost === "number" && !isNaN(cost)) return cost;
   if(typeof cost === "string"){
@@ -3631,6 +3690,7 @@ async function enterAppForUser(user, name){
   }
 
   totalPoints = data.totalPoints || 0;
+  locks = data.locks || {};
 
   const progress = data.progress || {};
   books.forEach(b => {
@@ -3663,20 +3723,30 @@ async function enterAppForUser(user, name){
    protect against). Returns the authoritative totalPoints from the
    server, or null if the write failed (caller falls back to a local
    optimistic update so the UI still works offline). */
-async function saveQuizResultRemote(bookKey, earnedPoints, passed){
+async function saveQuizResultRemote(bookKey, earnedPoints, passed, shouldLock){
   if(!currentUserDocRef) return null;
   try{
-    const newTotal = await db.runTransaction(async (tx)=>{
+    const result = await db.runTransaction(async (tx)=>{
       const snap = await tx.get(currentUserDocRef);
       const data = snap.data() || {};
       const current = data.totalPoints || 0;
       const progress = data.progress || {};
+      const userLocks = data.locks || {};
       if(passed) progress[bookKey] = true;
+
+      let lockUntil = null;
+      if(shouldLock){
+        lockUntil = Date.now() + LOCK_DURATION_MS;
+        userLocks[bookKey] = lockUntil;
+      }
+
       const updated = current + earnedPoints;
-      tx.update(currentUserDocRef, { totalPoints: updated, progress });
-      return updated;
+      const updatePayload = { totalPoints: updated, progress };
+      if(shouldLock) updatePayload.locks = userLocks;
+      tx.update(currentUserDocRef, updatePayload);
+      return { totalPoints: updated, lockUntil };
     });
-    return newTotal;
+    return result;
   }catch(err){
     console.warn("saveQuizResultRemote error:", err);
     return null;
@@ -4079,23 +4149,26 @@ function openChapterList(bookKey){
     const chKey = chapterKey(b.key, idx);
     const isDone = state[chKey] === "done";
     const used = attempts[chKey] || 0;
-    const exhausted = !isDone && used >= MAX_ATTEMPTS;
+    const lockUntil = isDone ? null : getLockUntil(chKey);
+    const exhausted = !isDone && (used >= MAX_ATTEMPTS || lockUntil !== null);
     const statusHtml = isDone
       ? `<span class="chapter-status done">✓ อ่านแล้ว</span>`
-      : exhausted
-        ? `<span class="chapter-status exhausted">ครบจำนวนครั้งแล้ว</span>`
-        : `<span class="chapter-status">ยังไม่อ่าน</span>`;
-    const btnLabel = isDone ? "อ่านอีกครั้ง" : "เริ่มอ่าน";
+      : lockUntil
+        ? `<span class="chapter-status exhausted">🔒 ล็อกถึง ${formatLockUntilDate(lockUntil)}</span>`
+        : exhausted
+          ? `<span class="chapter-status exhausted">ครบจำนวนครั้งแล้ว</span>`
+          : `<span class="chapter-status">ยังไม่อ่าน</span>`;
+    const btnLabel = isDone ? "อ่านอีกครั้ง" : (lockUntil ? "🔒 ถูกล็อก" : "เริ่มอ่าน");
     const chPoints = (typeof ch.points === "number" && ch.points > 0) ? ch.points : 10;
     return `
-      <div class="chapter-row">
+      <div class="chapter-row${lockUntil ? ' chapter-locked' : ''}">
         <div class="chapter-row-left">
           <div class="chapter-row-num">ตอนที่ ${idx+1}</div>
           <div class="chapter-row-title">${ch.title}</div>
           <span class="chapter-row-points">🏆 ${chPoints} แต้ม</span>
           ${statusHtml}
         </div>
-        <button class="btn chapter-open-btn" type="button" data-chapter-key="${chKey}">${btnLabel}</button>
+        <button class="btn chapter-open-btn" type="button" data-chapter-key="${chKey}" ${lockUntil ? "disabled" : ""}>${btnLabel}</button>
       </div>
     `;
   }).join('');
@@ -4127,14 +4200,17 @@ function openModal(bookKey){
 
   const isDone = state[bookKey] === "done";
   const usedAttempts = attempts[bookKey];
-  const exhausted = !isDone && usedAttempts >= MAX_ATTEMPTS;
+  const lockUntil = isDone ? null : getLockUntil(bookKey);
+  const exhausted = !isDone && (usedAttempts >= MAX_ATTEMPTS || lockUntil !== null);
 
   const readyDesc = document.getElementById('readyDesc');
   const attemptNote = document.getElementById('attemptNote');
   const startBtn = document.getElementById('startBtn');
 
   if(exhausted){
-    readyDesc.textContent = "คุณทำแบบทดสอบเรื่องนี้ครบ 3 ครั้งแล้วแต่ยังไม่ผ่าน กรุณาเลือกอ่านหนังสือเล่มอื่นก่อน";
+    readyDesc.textContent = lockUntil
+      ? `🔒 ถูกล็อกเนื่องจากตอบผิดครบ 3 ครั้ง จนถึงวันที่ ${formatLockUntilDate(lockUntil)} ระหว่างนี้กรุณาเลือกอ่านหนังสือเล่มอื่นก่อน`
+      : "คุณทำแบบทดสอบเรื่องนี้ครบ 3 ครั้งแล้วแต่ยังไม่ผ่าน กรุณาเลือกอ่านหนังสือเล่มอื่นก่อน";
     attemptNote.textContent = "";
     attemptNote.className = "attempt-note";
     startBtn.style.display = "none";
@@ -4452,10 +4528,17 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
   const alreadyDone = state[b.key] === "done";
   const earnedPoints = (passed && !alreadyDone) ? b.points : 0;
 
-  const newTotal = await saveQuizResultRemote(b.key, earnedPoints, passed);
+  /* ถ้าตอบผิด และนี่จะเป็นครั้งที่ 3 (ครบจำนวนครั้งสูงสุด) ให้คำนวณไว้ล่วงหน้า
+     ว่าต้องล็อกเล่ม/ตอนนี้ไว้ 15 วันด้วย แล้วส่งไปให้บันทึกลง Firestore พร้อม
+     กันในธุรกรรมเดียวกับการบันทึกคะแนน กันปัญหาเขียนคนละรอบไม่ตรงกัน */
+  const willBeAttemptCount = (attempts[b.key] || 0) + 1;
+  const shouldLock = !passed && willBeAttemptCount >= MAX_ATTEMPTS;
 
-  if(newTotal !== null){
-    totalPoints = newTotal;
+  const saveResult = await saveQuizResultRemote(b.key, earnedPoints, passed, shouldLock);
+
+  if(saveResult !== null){
+    totalPoints = saveResult.totalPoints;
+    if(saveResult.lockUntil) locks[b.key] = saveResult.lockUntil;
   } else if(earnedPoints > 0){
     totalPoints += earnedPoints;
   }
@@ -4483,15 +4566,18 @@ document.getElementById('submitBtn').addEventListener('click', async ()=>{
     const exhausted = remaining <= 0;
 
     if(exhausted){
-      document.getElementById('resultTitle').textContent = "ไม่ผ่าน ครบ 3 ครั้งแล้ว";
-      document.getElementById('resultNote').textContent = "คุณทำแบบทดสอบเรื่องนี้ครบ 3 ครั้งแล้วแต่ยังไม่ผ่าน ระบบจะพากลับไปหน้าหมวดหมู่หนังสือให้เลือกเล่มใหม่";
+      const lockUntilText = locks[b.key] ? formatLockUntilDate(locks[b.key]) : "";
+      document.getElementById('resultTitle').textContent = "🔒 ไม่ผ่าน ครบ 3 ครั้งแล้ว ถูกล็อก 15 วัน";
+      document.getElementById('resultNote').textContent = lockUntilText
+        ? `คุณทำแบบทดสอบเรื่องนี้ครบ 3 ครั้งแล้วแต่ยังไม่ผ่าน ระบบล็อกไม่ให้ทำซ้ำจนถึงวันที่ ${lockUntilText} เพื่อให้กลับไปอ่านเนื้อหาให้ละเอียดก่อน ระหว่างนี้เลือกอ่านเล่มอื่นไปก่อนได้`
+        : "คุณทำแบบทดสอบเรื่องนี้ครบ 3 ครั้งแล้วแต่ยังไม่ผ่าน ระบบจะพากลับไปหน้าหมวดหมู่หนังสือให้เลือกเล่มใหม่";
       document.getElementById('resultNote').style.display = "block";
       document.getElementById('retryBtn').style.display = "none";
       const cBtn = document.getElementById('continueBtn');
       cBtn.textContent = "กลับไปหน้าหมวดหมู่หนังสือ";
       cBtn.style.display = "block";
 
-      showToast("ครบ 3 ครั้งแล้ว กรุณาเลือกหนังสือเล่มใหม่");
+      showToast("ครบ 3 ครั้งแล้ว ถูกล็อก 15 วัน กรุณาเลือกหนังสือเล่มใหม่");
 
       clearTimeout(window._autoExitTimer);
       window._autoExitTimer = setTimeout(()=>{

@@ -388,6 +388,30 @@
   .nav-btn:hover{ background:rgba(255,255,255,0.14); }
   .nav-btn:active{ transform:scale(0.97); }
 
+  .guide-btn-row{
+    display:flex;
+    justify-content:center;
+    margin-top:18px;
+  }
+  .guide-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:10px 22px;
+    border-radius:999px;
+    border:1px solid #3B82C4;
+    background:#2C6693;
+    color:#fff;
+    font-family:'Sarabun', sans-serif;
+    font-size:13.5px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 3px 8px rgba(0,0,0,0.2);
+    transition:background 0.15s ease, transform 0.1s ease;
+  }
+  .guide-btn:hover{ background:#3578A8; }
+  .guide-btn:active{ transform:scale(0.97); }
+
   .category-filter-bar{
     display:flex;
     flex-wrap:wrap;
@@ -955,6 +979,23 @@
     height:280px;
     overflow:hidden;
   }
+  .guide-stats-line{
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--brass);
+    background:rgba(180,144,63,0.12);
+    border-radius:6px;
+    padding:8px 14px;
+    margin-bottom:14px;
+    text-align:center;
+  }
+  .guide-content-box{
+    /* ใช้สไตล์เดียวกับกล่องอ่านเนื้อเรื่อง แต่เลื่อนสกอร์ลอ่านยาว ๆ ได้เลย
+       ไม่ต้องแบ่งหน้าเหมือนตอนอ่านหนังสือ เพราะคู่มือไม่ยาวเท่าเนื้อเรื่อง */
+    height:auto;
+    max-height:min(60vh, 480px);
+    overflow-y:auto;
+  }
   .passage-page-nav{
     display:flex;
     align-items:center;
@@ -1367,6 +1408,9 @@
       <button class="nav-btn" id="navToRewardsBtn" type="button">🎁 แลกแต้มเป็นรางวัล</button>
       <button class="nav-btn" id="navToLibraryBtn" type="button" style="display:none;">📚 กลับไปหน้าอ่านหนังสือ</button>
     </div>
+    <div class="guide-btn-row" id="guideBtnRow">
+      <button class="guide-btn" id="openReadingGuideBtn" type="button">📖 คู่มือการอ่าน</button>
+    </div>
     <div class="category-filter-bar" id="categoryFilterBar"></div>
   </header>
 
@@ -1520,7 +1564,7 @@
     <div class="field">
       <label>จำนวนชั่วโมง กพช. ที่ต้องการแลก</label>
       <input type="number" id="kpchHours" min="1" step="1" placeholder="เช่น 2">
-      <div class="field-hint">อัตราแลก: 300 แต้ม = 1 ชั่วโมง</div>
+      <div class="field-hint">อัตราแลก: 500 แต้ม = 1 ชั่วโมง</div>
     </div>
     <div class="kpch-points-preview" id="kpchPointsPreview">กรอกจำนวนชั่วโมงเพื่อดูแต้มที่ต้องใช้</div>
     <p class="login-error" id="kpchError" style="display:none;"></p>
@@ -1584,6 +1628,14 @@
       <div class="history-loading">กำลังโหลดข้อมูล...</div>
     </div>
     <button class="btn secondary" id="historyCloseBtn">ปิด</button>
+  </div>
+
+  <div class="modal wide" id="modalReadingGuide" style="display:none;">
+    <div class="zone-tag">คู่มือการใช้งาน</div>
+    <h2 style="margin-bottom:10px;">📖 คู่มือการอ่าน</h2>
+    <div class="guide-stats-line" id="guideStatsLine"></div>
+    <div class="passage-box guide-content-box" id="guideContentBox">กำลังโหลด...</div>
+    <button class="btn secondary" id="guideCloseBtn">ปิด</button>
   </div>
 </div>
 
@@ -3118,7 +3170,7 @@ function renderRewards(){
   kpchSection.className = "rewards-kpch-section";
   kpchSection.innerHTML = `
     <h3>🕐 แลกแต้มเป็นชั่วโมง กพช. <span class="rewards-section-note">(สำหรับ นศ. สกร.ระดับอำเภอเทิงเท่านั้น)</span></h3>
-    <p class="rewards-kpch-rate">อัตราแลก: 300 แต้ม = 1 ชั่วโมง</p>
+    <p class="rewards-kpch-rate">อัตราแลก: 500 แต้ม = 1 ชั่วโมง</p>
     <button class="btn" id="openKpchFormBtn" type="button" style="width:auto; padding:13px 28px;">กรอกข้อมูลแลกชั่วโมง กพช.</button>
     <p class="rewards-kpch-desc">กรอกชื่อ-สกุล รหัสนักศึกษา ศูนย์/ครูประจำกลุ่ม และจำนวนชั่วโมงที่ต้องการแลก ระบบจะตัดแต้มให้ทันทีและแจ้งไปยังเจ้าหน้าที่เพื่อดำเนินการบันทึกชั่วโมงให้ต่อไป</p>
   `;
@@ -3192,22 +3244,22 @@ function buildRewardCard(r){
 
 /* ===================================================================
    แลกแต้มเป็นชั่วโมง กพช.
-   อัตราคงที่ 300 แต้ม = 1 ชั่วโมง ผู้อ่านกรอกฟอร์มเอง (ไม่ต้องสแกน QR)
+   อัตราคงที่ 500 แต้ม = 1 ชั่วโมง ผู้อ่านกรอกฟอร์มเอง (ไม่ต้องสแกน QR)
    ระบบตัดแต้มทันทีผ่าน transaction แล้วบันทึกคำขอลง Firestore collection
    "kpchRequests" ให้แอดมินเข้าไปดูและดำเนินการบันทึกชั่วโมงจริงต่อใน
    หน้า admin.html (ดูส่วน "คำขอแลกชั่วโมง กพช.")
 =================================================================== */
-const KPCH_POINTS_PER_HOUR = 300;
+const KPCH_POINTS_PER_HOUR = 500;
 const KPCH_CENTERS = [
   "ศกร.ระดับตำบลตับเต่า (ครูประสิทธิ วิชัย)",
   "ศกร.ระดับตำบลหงาว (ครูเด่นนภา นิทะโน)",
   "ศกร.ระดับตำบลเวียง (ครูรัชฎาภรณ์ สุริยนต์)",
-  "ศกร.ระดับตำบลสันทรายงาม (ครูศุภชัย แก้วกระจ่าง)",
-  "ศกร.ระดับตำบลปล้อง (ครูวีนัส สรรพสุข)",
+  "ศกร.ระดับตำบลสันทรายงาม (ครูวีนัส สรรพสุข)",
+  "ศกร.ระดับตำบลปล้อง (ครูพรทิพย์ สุขบัญชาชัย)",
   "ศกร.ระดับตำบลงิ้ว (ครูกัญญ์วรา สีหมนตรี)",
-  "ศกร.ระดับตำบลหนองแรด (-)",
+  "ศกร.ระดับตำบลหนองแรด (ครูรวินท์นิภา จันทวิมล)",
   "ศกร.ระดับตำบลแม่ลอย (ครูดวงกมล เข็มเพชร)",
-  "ศกร.ระดับตำบลศรีดอนไชย (-)",
+  "ศกร.ระดับตำบลศรีดอนไชย (ครูศุภชัย แก้วกระจ่าง)",
   "ศกร.ระดับตำบลเชียงเคี่ยน (ครูธันยพัต ปกครองบ้าน)",
   "ศกร.ระดับตำบลเวียง (ครูอดิเรก ประยศ)",
   "ศกร.ระดับตำบลงิ้ว (ครูทับทิม พุทธตาล)",
@@ -3600,9 +3652,10 @@ function showPage(page){
   document.getElementById('navToRewardsBtn').style.display = isRewards ? "none" : "inline-flex";
   document.getElementById('navToLibraryBtn').style.display = isRewards ? "inline-flex" : "none";
   document.getElementById('headerSub').textContent = isRewards ? REWARDS_SUB : LIBRARY_SUB;
-  /* แถบปุ่มหมวดหมู่หนังสือมีประโยชน์แค่ตอนอยู่หน้าห้องสมุดเท่านั้น
-     ซ่อนไว้ตอนอยู่หน้าแลกรางวัลเพื่อไม่ให้ดูรกเกินไป */
+  /* แถบปุ่มหมวดหมู่หนังสือและปุ่มคู่มือการอ่านมีประโยชน์แค่ตอนอยู่หน้า
+     ห้องสมุดเท่านั้น ซ่อนไว้ตอนอยู่หน้าแลกรางวัลเพื่อไม่ให้ดูรกเกินไป */
   document.getElementById('categoryFilterBar').style.display = isRewards ? "none" : "flex";
+  document.getElementById('guideBtnRow').style.display = isRewards ? "none" : "flex";
   window.scrollTo({ top:0, behavior:"smooth" });
 }
 
@@ -4924,6 +4977,62 @@ async function openRedemptionHistory(){
 }
 
 document.getElementById('historyCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('overlay').classList.remove('show');
+});
+
+/* ===================================================================
+   คู่มือการอ่าน
+   เนื้อหาคู่มือแก้ไขได้จากหน้า admin.html (เก็บไว้ที่ Firestore
+   siteSettings/readingGuide) แต่ตัวเลข "มีหนังสือกี่เล่ม กี่หมวด" คำนวณสด
+   จาก books/categories จริงเสมอ ไม่ต้องให้แอดมินคอยแก้ตัวเลขเองเวลาเพิ่ม
+   หนังสือหรือหมวดหมู่ใหม่ กันข้อมูลไม่ตรงกับของจริง */
+const DEFAULT_READING_GUIDE = `[h2]หมวดหมู่หนังสือ[/h2]
+เลือกอ่านหนังสือจากหมวดหมู่ต่าง ๆ ได้ที่แถบปุ่มด้านบน หรือกด "ทั้งหมด" เพื่อดูทุกหมวดพร้อมกัน บางหมวด เช่น "หนังสือเรียน" จะมีเมนูย่อยให้เลือกระดับชั้นอีกที
+
+[h2]วิธีอ่านและรับแต้ม[/h2]
+เลือกหนังสือที่สนใจ อ่านเนื้อเรื่องให้จบ แล้วกด "พร้อม!" เพื่อเริ่มทำแบบทดสอบท้ายเรื่อง 5 ข้อ ตอบถูกครบทุกข้อจะได้รับแต้มทันที (จำนวนแต้มแต่ละเล่ม/แต่ละตอนอาจไม่เท่ากัน ดูได้จากป้าย "🏆 แต้ม" บนปกหนังสือ) หนังสือบางเล่มแบ่งเป็นหลายตอน แต่ละตอนทำแบบทดสอบและรับแต้มแยกกันได้
+
+[h2]นำแต้มไปแลกอะไรได้บ้าง[/h2]
+กดปุ่ม "🎁 แลกแต้มเป็นรางวัล" เพื่อดูสิ่งที่แลกได้ แบ่งเป็น 3 แบบ:
+[color=#2C6693]1. ชั่วโมง กพช.[/color] สำหรับนักศึกษา สกร. กรอกข้อมูลแลกได้เลย (500 แต้ม = 1 ชั่วโมง)
+[color=#2C6693]2. สินค้าบริโภค[/color] เช่น ขนม เครื่องดื่ม แลกด้วยการสแกน QR Code รับที่ศูนย์
+[color=#2C6693]3. สินค้าอุปโภค[/color] เช่น กระเป๋า ปากกา กรอกที่อยู่แล้วระบบจัดส่งให้ทางไปรษณีย์
+
+[h2]⚠️ ข้อควรระวัง: ตอบผิดครบ 3 ครั้ง[/h2]
+แบบทดสอบแต่ละเล่ม/ตอน ทำได้สูงสุด 3 ครั้ง ถ้าตอบผิดครบ 3 ครั้งโดยยังไม่ผ่าน ระบบจะ[color=#A3372A]ล็อกเล่มนั้น (หรือตอนนั้น ถ้าเป็นหนังสือแบบรายตอน) เป็นเวลา 15 วัน[/color] จะมีไอคอนกุญแจ 🔒 ขึ้นให้เห็นชัดเจน พ้นกำหนด 15 วันแล้วระบบจะปลดล็อกให้อัตโนมัติ ดังนั้นแนะนำให้อ่านเนื้อเรื่องให้ละเอียดก่อนเริ่มทำแบบทดสอบทุกครั้ง
+
+[h2]เคล็ดลับอื่น ๆ[/h2]
+กดปุ่ม "ดูประวัติการแลกแต้ม" เพื่อตรวจสอบย้อนหลังว่าเคยแลกอะไรไปแล้วบ้าง และสามารถกลับมาอ่านหนังสือที่อ่านผ่านแล้วซ้ำได้ตลอดเวลา โดยไม่เสียแต้มเพิ่มหรือลดแต้มเดิม`;
+
+async function loadReadingGuideText(){
+  try{
+    const snap = await db.collection('siteSettings').doc('readingGuide').get();
+    if(snap.exists && snap.data().text){
+      return snap.data().text;
+    }
+  }catch(err){
+    console.warn("loadReadingGuideText error:", err);
+  }
+  return DEFAULT_READING_GUIDE;
+}
+
+document.getElementById('openReadingGuideBtn').addEventListener('click', async ()=>{
+  clearTimeout(window._autoExitTimer);
+  hideAllModals();
+  document.getElementById('modalReadingGuide').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
+
+  document.getElementById('guideStatsLine').textContent =
+    `📚 ขณะนี้มีหนังสือทั้งหมด ${books.length} เล่ม ใน ${getFlatCategories().length} หมวดหมู่`;
+
+  const box = document.getElementById('guideContentBox');
+  box.innerHTML = "กำลังโหลด...";
+  const guideText = await loadReadingGuideText();
+  box.innerHTML = parsePassageMarkup(guideText);
+});
+
+document.getElementById('guideCloseBtn').addEventListener('click', ()=>{
+  document.getElementById('modalReadingGuide').style.display = "none";
   document.getElementById('overlay').classList.remove('show');
 });
 

@@ -390,8 +390,23 @@
 
   .guide-btn-row{
     display:flex;
+    flex-wrap:wrap;
     justify-content:center;
+    align-items:center;
+    gap:10px;
     margin-top:18px;
+  }
+  .reader-count-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:9px 16px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.1);
+    border:1px solid rgba(255,255,255,0.22);
+    color:var(--cream);
+    font-size:12.5px;
+    font-weight:600;
   }
   .guide-btn{
     display:inline-flex;
@@ -1410,6 +1425,7 @@
     </div>
     <div class="guide-btn-row" id="guideBtnRow">
       <button class="guide-btn" id="openReadingGuideBtn" type="button">📖 คู่มือการอ่าน</button>
+      <span class="reader-count-pill" id="readerCountPill" style="display:none;"></span>
     </div>
     <div class="category-filter-bar" id="categoryFilterBar"></div>
   </header>
@@ -1564,7 +1580,7 @@
     <div class="field">
       <label>จำนวนชั่วโมง กพช. ที่ต้องการแลก</label>
       <input type="number" id="kpchHours" min="1" step="1" placeholder="เช่น 2">
-      <div class="field-hint">อัตราแลก: 500 แต้ม = 1 ชั่วโมง</div>
+      <div class="field-hint">อัตราแลก: 300 แต้ม = 1 ชั่วโมง</div>
     </div>
     <div class="kpch-points-preview" id="kpchPointsPreview">กรอกจำนวนชั่วโมงเพื่อดูแต้มที่ต้องใช้</div>
     <p class="login-error" id="kpchError" style="display:none;"></p>
@@ -4055,7 +4071,7 @@ function renderRewards(){
   kpchSection.className = "rewards-kpch-section";
   kpchSection.innerHTML = `
     <h3>🕐 แลกแต้มเป็นชั่วโมง กพช. <span class="rewards-section-note">(สำหรับ นศ. สกร.ระดับอำเภอเทิงเท่านั้น)</span></h3>
-    <p class="rewards-kpch-rate">อัตราแลก: 500 แต้ม = 1 ชั่วโมง</p>
+    <p class="rewards-kpch-rate">อัตราแลก: 300 แต้ม = 1 ชั่วโมง</p>
     <button class="btn" id="openKpchFormBtn" type="button" style="width:auto; padding:13px 28px;">กรอกข้อมูลแลกชั่วโมง กพช.</button>
     <p class="rewards-kpch-desc">กรอกชื่อ-สกุล รหัสนักศึกษา ศูนย์/ครูประจำกลุ่ม และจำนวนชั่วโมงที่ต้องการแลก ระบบจะตัดแต้มให้ทันทีและแจ้งไปยังเจ้าหน้าที่เพื่อดำเนินการบันทึกชั่วโมงให้ต่อไป</p>
   `;
@@ -4129,12 +4145,12 @@ function buildRewardCard(r){
 
 /* ===================================================================
    แลกแต้มเป็นชั่วโมง กพช.
-   อัตราคงที่ 500 แต้ม = 1 ชั่วโมง ผู้อ่านกรอกฟอร์มเอง (ไม่ต้องสแกน QR)
+   อัตราคงที่ 300 แต้ม = 1 ชั่วโมง ผู้อ่านกรอกฟอร์มเอง (ไม่ต้องสแกน QR)
    ระบบตัดแต้มทันทีผ่าน transaction แล้วบันทึกคำขอลง Firestore collection
    "kpchRequests" ให้แอดมินเข้าไปดูและดำเนินการบันทึกชั่วโมงจริงต่อใน
    หน้า admin.html (ดูส่วน "คำขอแลกชั่วโมง กพช.")
 =================================================================== */
-const KPCH_POINTS_PER_HOUR = 500;
+const KPCH_POINTS_PER_HOUR = 300;
 const KPCH_CENTERS = [
   "ศกร.ระดับตำบลตับเต่า (ครูประสิทธิ วิชัย)",
   "ศกร.ระดับตำบลหงาว (ครูเด่นนภา นิทะโน)",
@@ -4626,6 +4642,14 @@ async function enterAppForUser(user, name){
     await loadAdminDashboard();
     return;
   }
+
+  /* นับทุกครั้งที่นักอ่าน (ไม่นับแอดมิน) ล็อกอินสำเร็จ ไม่ว่าจะเป็นบัญชีใหม่
+     หรือบัญชีเดิมที่กลับมาล็อกอินซ้ำก็ตาม - ตัวเลขนี้สื่อถึง "ความคึกคักของ
+     การใช้งาน" ต่างจากจำนวนบัญชีที่สมัครทั้งหมด (ซึ่งดูได้ในหน้า "รายชื่อ
+     นักอ่าน" ของ admin.html อยู่แล้ว ไม่จำเป็นต้องมีตัวเลขซ้ำกันสองที่) ไม่
+     ต้อง await เพราะไม่อยากให้การนับสถิติไปหน่วงเวลาล็อกอิน ถ้าพลาดก็แค่
+     ตัวเลขคลาดเคลื่อนไปนิดหน่อย ไม่กระทบการใช้งานหลักเลย */
+  incrementReaderCount();
 
   totalPoints = data.totalPoints || 0;
   locks = data.locks || {};
@@ -5166,6 +5190,18 @@ function openModal(bookKey){
   hideAllModals();
   document.getElementById('modalReady').style.display = "block";
   document.getElementById('overlay').classList.add('show');
+
+  showSocialProofToast();
+}
+
+/* ข้อความ "มีผู้อ่านร่วมกับคุณ X คน" ที่โผล่มาสักครู่แล้วหายไปเอง ทุกครั้งที่
+   เปิดเข้าไปอ่านหนังสือเล่มไหนก็ตาม เพื่อกระตุ้นความรู้สึกว่ามีเพื่อนร่วมอ่าน
+   อยู่ด้วยกัน (จำนวนคนเป็นตัวเลขสุ่มที่ดูสมเหตุสมผล ไม่ได้นับผู้อ่านจริงแบบ
+   เรียลไทม์ ซึ่งต้องใช้ระบบติดตามสถานะออนไลน์ที่ซับซ้อนกว่านี้มาก) */
+function showSocialProofToast(){
+  const plausibleCounts = [10, 25, 50, 100];
+  const randomCount = plausibleCounts[Math.floor(Math.random() * plausibleCounts.length)];
+  showToast(`📖 ขณะนี้มีผู้อ่านร่วมกับคุณ ${randomCount} คน`);
 }
 
 /* Closes the overlay, or - if we got here from a chapter list - goes
@@ -5879,7 +5915,7 @@ const DEFAULT_READING_GUIDE = `[h2]หมวดหมู่หนังสือ
 
 [h2]นำแต้มไปแลกอะไรได้บ้าง[/h2]
 กดปุ่ม "🎁 แลกแต้มเป็นรางวัล" เพื่อดูสิ่งที่แลกได้ แบ่งเป็น 3 แบบ:
-[color=#2C6693]1. ชั่วโมง กพช.[/color] สำหรับนักศึกษา สกร. กรอกข้อมูลแลกได้เลย (500 แต้ม = 1 ชั่วโมง)
+[color=#2C6693]1. ชั่วโมง กพช.[/color] สำหรับนักศึกษา สกร. กรอกข้อมูลแลกได้เลย (300 แต้ม = 1 ชั่วโมง)
 [color=#2C6693]2. สินค้าบริโภค[/color] เช่น ขนม เครื่องดื่ม แลกด้วยการสแกน QR Code รับที่ศูนย์
 [color=#2C6693]3. สินค้าอุปโภค[/color] เช่น กระเป๋า ปากกา กรอกที่อยู่แล้วระบบจัดส่งให้ทางไปรษณีย์
 
@@ -5930,6 +5966,35 @@ function showToast(text){
   }, 2000);
 }
 
+/* ===================================================================
+   สถิติจำนวนครั้งที่มีการเข้าใช้งาน (โชว์ข้าง ๆ ปุ่ม "คู่มือการอ่าน")
+   นับทุกครั้งที่นักอ่าน (ไม่รวมแอดมิน) ล็อกอินสำเร็จ ไม่ว่าบัญชีใหม่หรือ
+   บัญชีเดิมก็ตาม เพื่อสื่อถึง "ความคึกคักของการใช้งาน" ต่างจากจำนวนบัญชีที่
+   สมัครทั้งหมด (ซึ่งมีอยู่แล้วในหน้า "รายชื่อนักอ่าน" ของ admin.html)
+   เก็บเป็นตัวเลขเดียวใน Firestore (ไม่ใช่การนับเอกสารใน users collection
+   สด ๆ ทุกครั้ง ซึ่งจะช้าและเปลืองเมื่อมีผู้อ่านเยอะขึ้นเรื่อย ๆ) เพิ่มทีละ 1
+   ด้วย FieldValue.increment ทุกครั้งที่ล็อกอินสำเร็จ */
+function incrementReaderCount(){
+  db.collection('siteStats').doc('readers').set({
+    totalReaders: firebase.firestore.FieldValue.increment(1)
+  }, { merge: true }).catch(err => console.warn("incrementReaderCount error:", err));
+}
+
+async function loadReaderCount(){
+  try{
+    const snap = await db.collection('siteStats').doc('readers').get();
+    const count = (snap.exists && typeof snap.data().totalReaders === "number") ? snap.data().totalReaders : 0;
+    const pill = document.getElementById('readerCountPill');
+    if(count > 0){
+      pill.textContent = `👥 มีการเข้าใช้งานแล้ว ${count.toLocaleString('th-TH')} ครั้ง`;
+      pill.style.display = "inline-flex";
+    }
+  }catch(err){
+    console.warn("loadReaderCount error:", err);
+    /* โหลดไม่สำเร็จก็แค่ไม่โชว์ป้ายนี้ ไม่กระทบการใช้งานหลักของเว็บเลย */
+  }
+}
+
 /* appReadyPromise ให้โค้ดส่วนอื่น (โดยเฉพาะตอนล็อกอินสำเร็จ) "รอ" ให้ขั้นตอน
    โหลดหนังสือ + ตั้งค่า state เริ่มต้นของ initApp() ทำเสร็จก่อนเสมอ ก่อนจะไป
    แก้ไข state ต่อ (เช่นใส่ผลอ่านที่เคยอ่านผ่านแล้วของนักอ่านคนนั้นเข้าไป) -
@@ -5941,6 +6006,7 @@ let appReadyPromise = (async function initApp(){
   initStateAndAttempts();
   buildShelfDeco();
   render();
+  loadReaderCount();
 })();
 </script>
 </body>

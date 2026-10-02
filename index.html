@@ -5190,18 +5190,6 @@ function openModal(bookKey){
   hideAllModals();
   document.getElementById('modalReady').style.display = "block";
   document.getElementById('overlay').classList.add('show');
-
-  showSocialProofToast();
-}
-
-/* ข้อความ "มีผู้อ่านร่วมกับคุณ X คน" ที่โผล่มาสักครู่แล้วหายไปเอง ทุกครั้งที่
-   เปิดเข้าไปอ่านหนังสือเล่มไหนก็ตาม เพื่อกระตุ้นความรู้สึกว่ามีเพื่อนร่วมอ่าน
-   อยู่ด้วยกัน (จำนวนคนเป็นตัวเลขสุ่มที่ดูสมเหตุสมผล ไม่ได้นับผู้อ่านจริงแบบ
-   เรียลไทม์ ซึ่งต้องใช้ระบบติดตามสถานะออนไลน์ที่ซับซ้อนกว่านี้มาก) */
-function showSocialProofToast(){
-  const plausibleCounts = [10, 25, 50, 100];
-  const randomCount = plausibleCounts[Math.floor(Math.random() * plausibleCounts.length)];
-  showToast(`📖 ขณะนี้มีผู้อ่านร่วมกับคุณ ${randomCount} คน`);
 }
 
 /* Closes the overlay, or - if we got here from a chapter list - goes

@@ -964,6 +964,7 @@
     margin:-6px 0 18px;
     text-align:center;
   }
+  #quizTitle{ font-size:13px !important; font-weight:700; color:#1a1208; text-align:center; line-height:1.5; margin:2px 0 4px !important; }
   .attempt-note.warn{ color:#A3372A; }
 
   .passage-image-wrap{
@@ -987,14 +988,14 @@
     border-radius:4px;
     padding:18px 20px;
     margin-bottom:10px;
-    font-size:18px;
+    font-size:20px;
     line-height:1.9;
     color:#000000;
     text-align:left;
     /* ความสูงคงที่ทุกหน้า (ปรับตามความสูงจอ) - ผู้อ่านต้องกดถัดไปจนถึงหน้าสุดท้าย
        แบบทดสอบจึงจะแสดงขึ้นมา */
-    height:clamp(340px, calc(100vh - 340px), 600px);
-    height:clamp(340px, calc(100dvh - 340px), 600px);
+    height:clamp(380px, calc(100vh - 270px), 720px);
+    height:clamp(380px, calc(100dvh - 270px), 720px);
     overflow:hidden;
   }
   .guide-stats-line{
@@ -1050,7 +1051,7 @@
   .passage-box .passage-h1{
     font-family:'Sarabun', sans-serif;
     font-weight:700;
-    font-size:21px;
+    font-size:24px;
     color:var(--wood-dark);
     margin:18px 0 10px;
   }
@@ -1058,7 +1059,7 @@
   .passage-box .passage-h2{
     font-family:'Sarabun', sans-serif;
     font-weight:700;
-    font-size:19px;
+    font-size:22px;
     color:var(--wood-dark);
     margin:16px 0 8px;
   }
@@ -1066,7 +1067,7 @@
   .passage-box .passage-h3{
     font-family:'Sarabun', sans-serif;
     font-weight:700;
-    font-size:17px;
+    font-size:20px;
     color:var(--brass);
     margin:14px 0 6px;
   }
@@ -5455,13 +5456,36 @@ function updateQuizGate(){
 document.getElementById('passagePrevBtn').addEventListener('click', ()=> showPassagePage(passagePageIndex - 1));
 document.getElementById('passageNextBtn').addEventListener('click', ()=> showPassagePage(passagePageIndex + 1));
 
+/* ถ้าขนาดกล่องอ่านเปลี่ยนหลังตัดหน้าไปแล้ว (เช่น แถบเบราว์เซอร์บนมือถือหุบ/ขยาย,
+   หมุนจอ, ฟอนต์โหลดเสร็จช้า) ให้ตัดหน้าใหม่ให้พอดีกับกล่องเสมอ ไม่เหลือที่ว่างค้างด้านล่าง */
+let passageBlocks = [];
+let lastPagSize = "";
+function repaginateIfResized(){
+  const bx = document.getElementById('passageBox');
+  if(!passageBlocks.length || !bx.clientHeight || !passagePages.length) return;
+  const sz = bx.clientHeight + "x" + bx.clientWidth;
+  if(sz === lastPagSize) return;
+  lastPagSize = sz;
+  const frac = passagePageIndex / Math.max(passagePages.length, 1);
+  const wasDone = passageReadDone;
+  passagePages = paginatePassageBlocks(passageBlocks);
+  let idx = Math.min(Math.round(frac * passagePages.length), passagePages.length - 1);
+  if(!wasDone && passagePages.length > 1 && idx >= passagePages.length - 1) idx = passagePages.length - 2;
+  showPassagePage(idx);
+}
+if(window.ResizeObserver) new ResizeObserver(repaginateIfResized).observe(document.getElementById('passageBox'));
+window.addEventListener('resize', repaginateIfResized);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ lastPagSize = ""; repaginateIfResized(); });
+
 function startQuiz(){
   const b = getUnit(currentBookKey);
   const cat = findCategoryByKey(b.categoryKey);
   document.getElementById('quizZoneTag').textContent = cat.title;
   document.getElementById('quizTitle').textContent = b.title;
 
-  passagePages = paginatePassageBlocks(parsePassageMarkupBlocks(b.passage));
+  passageBlocks = parsePassageMarkupBlocks(b.passage);
+  passagePages = paginatePassageBlocks(passageBlocks);
+  lastPagSize = document.getElementById('passageBox').clientHeight + "x" + document.getElementById('passageBox').clientWidth;
   passageReadDone = false;
   showPassagePage(0);
 

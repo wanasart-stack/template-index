@@ -2753,22 +2753,100 @@ const checkSvg = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><p
 let books = [];
 let rewards = [];
 
-async function loadContentFromFirestore(){
+/* ---------------------------------------------------------------
+   แคชรายการหนังสือไว้ในเครื่องผู้ใช้ (IndexedDB) เพื่อให้เปิดเว็บเร็วและอ่าน
+   Firestore น้อยลง ใช้ร่วมกับเอกสาร content/_catalog ที่ admin อัปเดตทุกครั้ง
+   ที่เพิ่ม/แก้/ลบ/นำเข้าหนังสือ (เก็บเวลาอัปเดตล่าสุด + รายการรหัสหนังสือทั้งหมด)
+     - เวลาตรงกับแคช            -> ใช้แคชเลย (อ่านเพิ่ม 1 ครั้ง)
+     - เวลาใหม่กว่า             -> ดึงเฉพาะเล่มที่เปลี่ยนมาแก้แคช แล้วตัดเล่มที่ถูกลบออก
+     - ไม่มีแคช/แคชเก่ากว่า 12 ชม./ข้อมูลไม่ครบ -> โหลดทั้งหมดแบบเดิม แล้วบันทึกแคช
+   เอกสาร _catalog ไม่มี field "order" จึงไม่ปนเข้ามาในรายการหนังสือ */
+const CATALOG_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+function idbOpenCache(){
+  return new Promise((resolve, reject)=>{
+    const r = indexedDB.open('readerCache', 1);
+    r.onupgradeneeded = ()=> r.result.createObjectStore('kv');
+    r.onsuccess = ()=> resolve(r.result);
+    r.onerror = ()=> reject(r.error);
+  });
+}
+async function idbCacheGet(k){
   try{
-    const snap = await db.collection('content').orderBy('order').get();
-    books = snap.empty ? DEFAULT_BOOKS : snap.docs.map(d => ({ key: d.id, ...d.data() }));
-  }catch(err){
-    console.warn("loadContentFromFirestore(books) error:", err);
-    books = DEFAULT_BOOKS;
+    const d = await idbOpenCache();
+    return await new Promise((resolve, reject)=>{
+      const q = d.transaction('kv').objectStore('kv').get(k);
+      q.onsuccess = ()=> resolve(q.result);
+      q.onerror = ()=> reject(q.error);
+    });
+  }catch(e){ return null; }
+}
+async function idbCacheSet(k, v){
+  try{
+    const d = await idbOpenCache();
+    await new Promise((resolve, reject)=>{
+      const tx = d.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(v, k);
+      tx.oncomplete = resolve;
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }catch(e){ /* เก็บแคชไม่ได้ก็ไม่เป็นไร รอบหน้าโหลดเต็มตามปกติ */ }
+}
+function stripForCache(list){
+  return list.map(b=>{ const c = Object.assign({}, b); delete c.createdAt; delete c.updatedAt; return c; });
+}
+function sortBooksByOrder(list){
+  return list.sort((a, b)=> (typeof a.order === "number" ? a.order : 0) - (typeof b.order === "number" ? b.order : 0));
+}
+
+async function loadBooksSmart(){
+  const cached = await idbCacheGet('catalog');
+  let meta = null;
+  try{
+    const m = await db.collection('content').doc('_catalog').get();
+    if(m.exists) meta = m.data();
+  }catch(e){ meta = null; }
+  const stamp = (meta && meta.updatedAt && typeof meta.updatedAt.toMillis === "function") ? meta.updatedAt.toMillis() : null;
+  const fresh = !!(cached && Array.isArray(cached.books) && cached.savedAt && (Date.now() - cached.savedAt) < CATALOG_MAX_AGE_MS);
+
+  if(stamp && fresh){
+    if(cached.stamp === stamp){
+      books = cached.books;
+      return;
+    }
+    if(Array.isArray(meta.keys) && cached.stamp && stamp > cached.stamp){
+      try{
+        const since = firebase.firestore.Timestamp.fromMillis(cached.stamp - 120000);
+        const q = await db.collection('content').where('updatedAt', '>', since).get();
+        const map = new Map(cached.books.map(b => [b.key, b]));
+        q.docs.forEach(d => { if(!d.id.startsWith('_')) map.set(d.id, { key: d.id, ...d.data() }); });
+        if(meta.keys.every(k => map.has(k))){
+          const keep = new Set(meta.keys);
+          const list = sortBooksByOrder([...map.values()].filter(b => keep.has(b.key)));
+          books = list;
+          idbCacheSet('catalog', { stamp, savedAt: cached.savedAt, books: stripForCache(list) });
+          return;
+        }
+      }catch(e){ console.warn("incremental catalog update failed, full reload:", e); }
+    }
   }
 
   try{
-    const snap = await db.collection('rewardsCatalog').orderBy('order').get();
-    rewards = snap.empty ? DEFAULT_REWARDS : snap.docs.map(d => ({ key: d.id, ...d.data() }));
+    const snap = await db.collection('content').orderBy('order').get();
+    books = snap.empty ? DEFAULT_BOOKS : snap.docs.map(d => ({ key: d.id, ...d.data() }));
+    if(stamp && !snap.empty) idbCacheSet('catalog', { stamp, savedAt: Date.now(), books: stripForCache(books) });
   }catch(err){
-    console.warn("loadContentFromFirestore(rewards) error:", err);
-    rewards = DEFAULT_REWARDS;
+    console.warn("loadContentFromFirestore(books) error:", err);
+    books = (cached && Array.isArray(cached.books) && cached.books.length) ? cached.books : DEFAULT_BOOKS;
   }
+}
+
+async function loadContentFromFirestore(){
+  /* โหลดหนังสือกับรางวัลพร้อมกัน */
+  const booksPromise = loadBooksSmart();
+  const rewardsPromise = db.collection('rewardsCatalog').orderBy('order').get()
+    .then(snap => { rewards = snap.empty ? DEFAULT_REWARDS : snap.docs.map(d => ({ key: d.id, ...d.data() })); })
+    .catch(err => { console.warn("loadContentFromFirestore(rewards) error:", err); rewards = DEFAULT_REWARDS; });
+  await Promise.all([booksPromise, rewardsPromise]);
 }
 
 /* ===================================================================
@@ -5092,24 +5170,45 @@ document.getElementById('loginForm').addEventListener('submit', async (e)=>{
   errorEl.style.display = "none";
 
   if(submitBtnEl){ submitBtnEl.disabled = true; submitBtnEl.textContent = "กำลังเข้าสู่ระบบ..."; }
-  await doLogin(name, pass);
-  if(submitBtnEl){ submitBtnEl.disabled = false; submitBtnEl.textContent = "เข้าสู่ระบบ"; }
+  const loginOk = await doLogin(name, pass);
+  if(!loginOk){
+    resetLoginButton();
+  } else {
+    /* เข้าสู่ระบบสำเร็จแล้ว แต่ต้องรอโหลดรายการหนังสือต่ออีกพักหนึ่ง - คงปุ่มไว้เป็น
+       "กำลังโหลดหนังสือ..." (กดซ้ำไม่ได้) จนกว่าหน้าอ่านหนังสือจะขึ้น เดิมปุ่มกลับมา
+       เป็น "เข้าสู่ระบบ" ทันทีทั้งที่หน้ายังไม่เปลี่ยน คนเลยกดซ้ำเป็นครั้งที่ 2 */
+    if(submitBtnEl) submitBtnEl.textContent = "กำลังโหลดหนังสือ...";
+    clearTimeout(window._loginResetTimer);
+    window._loginResetTimer = setTimeout(resetLoginButton, 30000);
+  }
 });
+function resetLoginButton(){
+  clearTimeout(window._loginResetTimer);
+  const btn = document.querySelector('#loginForm button[type="submit"]');
+  if(btn){ btn.disabled = false; btn.textContent = "เข้าสู่ระบบ"; }
+}
 
 /* Firebase keeps the sign-in session itself (IndexedDB), so on reload we
    just wait for it to tell us who's signed in - no plaintext password
    needs to sit in localStorage anymore. This one listener handles BOTH
    a fresh doLogin() sign-in and a session restored on page reload, so
    enterAppForUser() only ever runs from one place. */
+let enteringUid = null;
 auth.onAuthStateChanged(async (user)=>{
   if(!user) return;
+  /* กันไม่ให้เข้าระบบซ้อนกันสองรอบสำหรับบัญชีเดียวกัน (เช่น กดเข้าสู่ระบบซ้ำ หรือ
+     session เดิมกับล็อกอินใหม่เด้งพร้อมกัน) ซึ่งทำให้หน้าโหลดซ้ำและนับผู้เข้าใช้ซ้ำ */
+  if(enteringUid === user.uid) return;
+  enteringUid = user.uid;
   const name = pendingLoginName || "";
   pendingLoginName = null;
   try{
     await enterAppForUser(user, name);
   }catch(err){
     console.warn("enterAppForUser error:", err);
+    enteringUid = null;
   }
+  resetLoginButton();
 });
 
 /* ---------------- Chapter list (multi-chapter books) ---------------- */

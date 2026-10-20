@@ -1046,7 +1046,10 @@
     margin:-8px 0 16px;
   }
   .passage-page-indicator{ font-size:12.5px; color:var(--ink-soft); font-weight:600; }
-  .passage-box p{ margin:0 0 14px; }
+  /* ต้องกำหนดซ้ำ เพราะกฎ ".modal p" (ขนาด 14.5px สีจาง) จะทับย่อหน้าในกล่องอ่าน
+     ทำให้ฟอนต์เล็กกว่าที่ตั้งไว้ และไม่ตรงกับกล่องวัดที่ใช้ตัดหน้า */
+  .passage-box p{ margin:0 0 14px; font-size:inherit; line-height:inherit; color:inherit; }
+  .guide-content-box{ font-size:16px; }
   .passage-box p:last-child{ margin-bottom:0; }
   .passage-box .passage-h1{
     font-family:'Sarabun', sans-serif;
@@ -1525,7 +1528,7 @@
     <div id="questionsWrap"></div>
     <button class="btn" id="submitBtn" disabled>ส่งคำตอบ</button>
     <button class="btn secondary" id="closeQuiz">ปิด</button>
-    <div style="text-align:center;font-size:10.5px;color:#9a9a9a;margin-top:10px;">หน้าอ่านเวอร์ชัน 6</div>
+    <div style="text-align:center;font-size:10.5px;color:#9a9a9a;margin-top:10px;">หน้าอ่านเวอร์ชัน 7</div>
   </div>
 
   <div class="modal" id="modalResult" style="display:none;">

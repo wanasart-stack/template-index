@@ -987,11 +987,14 @@
     border-radius:4px;
     padding:18px 20px;
     margin-bottom:10px;
-    font-size:14.5px;
+    font-size:16px;
     line-height:1.9;
     color:#000000;
     text-align:left;
-    height:280px;
+    /* ความสูงคงที่ทุกหน้า (ปรับตามความสูงจอ) - ผู้อ่านต้องกดถัดไปจนถึงหน้าสุดท้าย
+       แบบทดสอบจึงจะแสดงขึ้นมา */
+    height:clamp(340px, calc(100vh - 340px), 600px);
+    height:clamp(340px, calc(100dvh - 340px), 600px);
     overflow:hidden;
   }
   .guide-stats-line{
@@ -1031,6 +1034,16 @@
   }
   .passage-page-btn:hover:not(:disabled){ background:#fff; }
   .passage-page-btn:disabled{ opacity:0.35; cursor:default; }
+  .read-gate-hint{
+    text-align:center;
+    font-size:13px;
+    font-weight:600;
+    color:var(--brass);
+    background:rgba(180,144,63,0.12);
+    border-radius:6px;
+    padding:9px 12px;
+    margin:-8px 0 16px;
+  }
   .passage-page-indicator{ font-size:12.5px; color:var(--ink-soft); font-weight:600; }
   .passage-box p{ margin:0 0 14px; }
   .passage-box p:last-child{ margin-bottom:0; }
@@ -1506,6 +1519,7 @@
       <span class="passage-page-indicator" id="passagePageIndicator">หน้า 1/1</span>
       <button type="button" class="passage-page-btn" id="passageNextBtn" aria-label="หน้าถัดไป">ถัดไป ▶</button>
     </div>
+    <div class="read-gate-hint" id="readGateHint" style="display:none;">📖 อ่านให้ถึงหน้าสุดท้าย แบบทดสอบจะแสดงขึ้นมาให้ทำ</div>
     <div class="quiz-progress" id="quizProgress">ตอบแล้ว 0/5 ข้อ</div>
     <div id="questionsWrap"></div>
     <button class="btn" id="submitBtn" disabled>ส่งคำตอบ</button>
@@ -5423,6 +5437,19 @@ function showPassagePage(idx){
   } else {
     nav.style.display = "none";
   }
+  updateQuizGate();
+}
+
+/* แสดงแบบทดสอบเมื่อผู้อ่านเปิดถึงหน้าสุดท้ายของเนื้อเรื่องแล้วเท่านั้น
+   (เนื้อเรื่องหน้าเดียวแสดงทันที) เปิดแล้วจะคงไว้แม้ย้อนกลับไปอ่านหน้าก่อนหน้า */
+let passageReadDone = false;
+function updateQuizGate(){
+  if(passagePageIndex >= passagePages.length - 1) passageReadDone = true;
+  const show = passageReadDone;
+  document.getElementById('quizProgress').style.display = show ? "" : "none";
+  document.getElementById('questionsWrap').style.display = show ? "" : "none";
+  document.getElementById('submitBtn').style.display = show ? "" : "none";
+  document.getElementById('readGateHint').style.display = show ? "none" : "block";
 }
 
 document.getElementById('passagePrevBtn').addEventListener('click', ()=> showPassagePage(passagePageIndex - 1));
@@ -5435,6 +5462,7 @@ function startQuiz(){
   document.getElementById('quizTitle').textContent = b.title;
 
   passagePages = paginatePassageBlocks(parsePassageMarkupBlocks(b.passage));
+  passageReadDone = false;
   showPassagePage(0);
 
   const imgWrap = document.getElementById('passageImageWrap');

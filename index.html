@@ -1525,7 +1525,7 @@
     <div id="questionsWrap"></div>
     <button class="btn" id="submitBtn" disabled>ส่งคำตอบ</button>
     <button class="btn secondary" id="closeQuiz">ปิด</button>
-    <div style="text-align:center;font-size:10.5px;color:#9a9a9a;margin-top:10px;">หน้าอ่านเวอร์ชัน 5 (21 ต.ค.)</div>
+    <div style="text-align:center;font-size:10.5px;color:#9a9a9a;margin-top:10px;">หน้าอ่านเวอร์ชัน 6</div>
   </div>
 
   <div class="modal" id="modalResult" style="display:none;">
@@ -5484,7 +5484,21 @@ function repaginateIfResized(){
 if(window.ResizeObserver) new ResizeObserver(repaginateIfResized).observe(document.getElementById('passageBox'));
 window.addEventListener('resize', repaginateIfResized);
 if(window.visualViewport) window.visualViewport.addEventListener('resize', repaginateIfResized);
-if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ lastPagSize = ""; repaginateIfResized(); });
+/* ฟอนต์ Sarabun โหลดช้ากว่าตอนตัดหน้า (ตอนเปิดตอนครั้งแรกยังใช้ฟอนต์สำรองที่กว้างกว่า)
+   พอฟอนต์จริงมา ตัวอักษรกินที่น้อยลง ทำให้หน้าเหลือที่ว่างค้างด้านล่าง
+   จึงต้องตัดหน้าใหม่ทุกครั้งที่ฟอนต์โหลดเสร็จ */
+function forceRepaginate(){ lastPagSize = ""; repaginateIfResized(); }
+function ensurePassageFonts(){
+  if(document.fonts && document.fonts.load){
+    Promise.all([document.fonts.load('400 22px Sarabun'), document.fonts.load('700 22px Sarabun')]).then(forceRepaginate).catch(()=>{});
+  }
+  setTimeout(forceRepaginate, 700);
+  setTimeout(forceRepaginate, 2000);
+}
+if(document.fonts){
+  if(document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', forceRepaginate);
+  if(document.fonts.ready) document.fonts.ready.then(forceRepaginate);
+}
 
 function startQuiz(){
   const b = getUnit(currentBookKey);
@@ -5498,6 +5512,7 @@ function startQuiz(){
   lastPagSize = document.getElementById('passageBox').clientHeight + "x" + document.getElementById('passageBox').clientWidth;
   passageReadDone = false;
   showPassagePage(0);
+  ensurePassageFonts();
 
   const imgWrap = document.getElementById('passageImageWrap');
   const imgEl = document.getElementById('passageImage');

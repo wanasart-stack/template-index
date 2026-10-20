@@ -988,7 +988,7 @@
     border-radius:4px;
     padding:18px 20px;
     margin-bottom:10px;
-    font-size:22px;
+    font-size:18px;
     line-height:1.85;
     color:#000000;
     text-align:left;
@@ -1054,7 +1054,7 @@
   .passage-box .passage-h1{
     font-family:'Sarabun', sans-serif;
     font-weight:700;
-    font-size:26px;
+    font-size:22px;
     color:var(--wood-dark);
     margin:18px 0 10px;
   }
@@ -1062,7 +1062,7 @@
   .passage-box .passage-h2{
     font-family:'Sarabun', sans-serif;
     font-weight:700;
-    font-size:24px;
+    font-size:20px;
     color:var(--wood-dark);
     margin:16px 0 8px;
   }
@@ -1070,7 +1070,7 @@
   .passage-box .passage-h3{
     font-family:'Sarabun', sans-serif;
     font-weight:700;
-    font-size:22px;
+    font-size:18px;
     color:var(--brass);
     margin:14px 0 6px;
   }
@@ -1528,7 +1528,7 @@
     <div id="questionsWrap"></div>
     <button class="btn" id="submitBtn" disabled>ส่งคำตอบ</button>
     <button class="btn secondary" id="closeQuiz">ปิด</button>
-    <div style="text-align:center;font-size:10.5px;color:#9a9a9a;margin-top:10px;">หน้าอ่านเวอร์ชัน 7</div>
+    <div style="text-align:center;font-size:10.5px;color:#9a9a9a;margin-top:10px;">หน้าอ่านเวอร์ชัน 8</div>
   </div>
 
   <div class="modal" id="modalResult" style="display:none;">
@@ -5493,7 +5493,7 @@ if(window.visualViewport) window.visualViewport.addEventListener('resize', repag
 function forceRepaginate(){ lastPagSize = ""; repaginateIfResized(); }
 function ensurePassageFonts(){
   if(document.fonts && document.fonts.load){
-    Promise.all([document.fonts.load('400 22px Sarabun'), document.fonts.load('700 22px Sarabun')]).then(forceRepaginate).catch(()=>{});
+    Promise.all([document.fonts.load('400 18px Sarabun'), document.fonts.load('700 18px Sarabun')]).then(forceRepaginate).catch(()=>{});
   }
   setTimeout(forceRepaginate, 700);
   setTimeout(forceRepaginate, 2000);

@@ -427,6 +427,36 @@
   .guide-btn:hover{ background:#3578A8; }
   .guide-btn:active{ transform:scale(0.97); }
 
+  .redeemer-ticker{
+    display:none;
+    align-items:center;
+    gap:10px;
+    background:rgba(180,144,63,0.14);
+    border:1px solid rgba(180,144,63,0.35);
+    border-radius:999px;
+    padding:7px 14px;
+    margin:0 auto 12px;
+    max-width:1100px;
+    overflow:hidden;
+  }
+  .redeemer-ticker-label{
+    flex:0 0 auto;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--brass);
+    white-space:nowrap;
+  }
+  .redeemer-ticker-viewport{ flex:1 1 auto; overflow:hidden; min-width:0; }
+  .redeemer-ticker-track{
+    display:inline-flex;
+    white-space:nowrap;
+    animation:redeemerScroll 30s linear infinite;
+    will-change:transform;
+  }
+  .redeemer-ticker-track:hover{ animation-play-state:paused; }
+  .redeemer-ticker-item{ font-size:13.5px; color:var(--ink); padding-right:34px; }
+  .redeemer-ticker-item b{ font-weight:700; }
+  @keyframes redeemerScroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
   .category-filter-bar{
     display:flex;
     flex-wrap:wrap;
@@ -1440,6 +1470,10 @@
     <div class="header-nav">
       <button class="nav-btn" id="navToRewardsBtn" type="button">🎁 แลกแต้มเป็นรางวัล</button>
       <button class="nav-btn" id="navToLibraryBtn" type="button" style="display:none;">📚 กลับไปหน้าอ่านหนังสือ</button>
+    </div>
+    <div class="redeemer-ticker" id="redeemerTicker">
+      <span class="redeemer-ticker-label">🎁 แลกรางวัลแล้ว</span>
+      <div class="redeemer-ticker-viewport"><div class="redeemer-ticker-track" id="redeemerTrack"></div></div>
     </div>
     <div class="guide-btn-row" id="guideBtnRow">
       <button class="guide-btn" id="openReadingGuideBtn" type="button">📖 คู่มือการอ่าน</button>
@@ -4451,6 +4485,7 @@ document.getElementById('kpchConfirmSubmitBtn').addEventListener('click', async 
       document.getElementById('modalKpchConfirm').style.display = "none";
       document.getElementById('overlay').classList.remove('show');
       pendingKpchRequest = null;
+      recordRedeemerPublic(`ชั่วโมง กพช. ${hours} ชั่วโมง`);
       showToast(`ส่งคำขอแลก ${hours} ชั่วโมงสำเร็จ (-${pointsNeeded} แต้ม) เจ้าหน้าที่จะดำเนินการบันทึกชั่วโมงให้ต่อไป`);
       renderRewards();
     }
@@ -4625,6 +4660,7 @@ document.getElementById('shippingConfirmSubmitBtn').addEventListener('click', as
       document.getElementById('modalShippingConfirm').style.display = "none";
       document.getElementById('overlay').classList.remove('show');
       pendingShippingOrder = null;
+      recordRedeemerPublic(d.rewardTitle);
       showToast(`แลก "${d.rewardTitle}" สำเร็จ เจ้าหน้าที่จะจัดส่งให้ตามที่อยู่ที่แจ้งไว้`);
       renderRewards();
     }
@@ -4677,6 +4713,7 @@ function showPage(page){
      ห้องสมุดเท่านั้น ซ่อนไว้ตอนอยู่หน้าแลกรางวัลเพื่อไม่ให้ดูรกเกินไป */
   document.getElementById('categoryFilterBar').style.display = isRewards ? "none" : "flex";
   document.getElementById('guideBtnRow').style.display = isRewards ? "none" : "flex";
+  updateRedeemerTickerVisibility(isRewards);
   window.scrollTo({ top:0, behavior:"smooth" });
 }
 
@@ -4804,6 +4841,7 @@ async function enterAppForUser(user, name){
      appReadyPromise ที่รอไว้ข้างบนแล้วครบถ้วนอยู่แล้ว แค่ render() ใหม่อีกที
      ด้วย state ที่เพิ่งใส่ผลอ่านของนักอ่านคนนี้เข้าไปก็พอ */
   render();
+  loadRedeemerTicker();
 }
 
 /* Runs as a Firestore transaction so two devices/tabs finishing a quiz
@@ -4867,6 +4905,7 @@ async function redeemRewardRemote(rewardKey, rewardTitle, cost){
       });
       return { ok:true, totalPoints: updated };
     });
+    if(result && result.ok) recordRedeemerPublic(rewardTitle);
     return result;
   }catch(err){
     console.warn("redeemRewardRemote error:", err);
@@ -4936,6 +4975,7 @@ async function redeemByQrCodeRemote(code){
       });
       return { ok:true, totalPoints: updated, cost, rewardTitle: codeData.rewardTitle || "" };
     });
+    if(result && result.ok) recordRedeemerPublic(result.rewardTitle || "แลกรางวัลด้วย QR Code");
     return result;
   }catch(err){
     console.warn("redeemByQrCodeRemote error:", err);
@@ -6251,6 +6291,44 @@ function showToast(text){
    เก็บเป็นตัวเลขเดียวใน Firestore (ไม่ใช่การนับเอกสารใน users collection
    สด ๆ ทุกครั้ง ซึ่งจะช้าและเปลืองเมื่อมีผู้อ่านเยอะขึ้นเรื่อย ๆ) เพิ่มทีละ 1
    ด้วย FieldValue.increment ทุกครั้งที่ล็อกอินสำเร็จ */
+/* ---------------------------------------------------------------
+   แถบวิ่ง "แลกรางวัลแล้ว" เหนือหมวดหนังสือ
+   เก็บใน Firestore: siteStats/redeemers -> items:[{name, reward, ts}] (เพิ่มทีหลังจากแลกสำเร็จ
+   เขียนแบบ "พยายามเขียน" นอกธุรกรรมแลกรางวัล ถ้าเขียนไม่ได้จะไม่กระทบการแลกรางวัลเลย)
+   แสดง 30 รายการล่าสุด วิ่งวนต่อเนื่อง ไม่มีรายการก็ซ่อนแถบไว้ */
+let redeemerTickerHasItems = false;
+function escHtmlTicker(t){ return String(t == null ? "" : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function recordRedeemerPublic(rewardTitle){
+  try{
+    const reward = String(rewardTitle || "").replace(/\s*\(จัดส่งทางไปรษณีย์\)\s*$/, "").slice(0, 60);
+    db.collection('siteStats').doc('redeemers').set({
+      items: firebase.firestore.FieldValue.arrayUnion({ name: String(currentUserName || "นักอ่าน").slice(0, 40), reward, ts: Date.now() })
+    }, { merge: true }).catch(err => console.warn("recordRedeemerPublic error:", err));
+  }catch(err){ console.warn("recordRedeemerPublic error:", err); }
+}
+function updateRedeemerTickerVisibility(isRewards){
+  const el = document.getElementById('redeemerTicker');
+  if(el) el.style.display = (!isRewards && redeemerTickerHasItems) ? "flex" : "none";
+}
+async function loadRedeemerTicker(){
+  try{
+    const snap = await withTimeout(db.collection('siteStats').doc('redeemers').get(), 8000, 'redeemers');
+    const items = (snap.exists && Array.isArray(snap.data().items)) ? snap.data().items.slice() : [];
+    items.sort((a, b)=> (a.ts || 0) - (b.ts || 0));
+    const recent = items.slice(-30).reverse();   // ล่าสุดขึ้นก่อน
+    if(recent.length === 0){ redeemerTickerHasItems = false; updateRedeemerTickerVisibility(false); return; }
+    const one = recent.map(it => `<span class="redeemer-ticker-item"><b>${escHtmlTicker(it.name)}</b> แลก ${escHtmlTicker(it.reward)}</span>`).join('');
+    const track = document.getElementById('redeemerTrack');
+    track.innerHTML = one + one;   // ซ้ำสองชุดเพื่อให้วิ่งวนต่อเนื่องไม่มีช่องว่าง
+    track.style.animationDuration = Math.max(20, recent.length * 5) + "s";
+    redeemerTickerHasItems = true;
+    const onRewards = document.getElementById('pageRewards') && document.getElementById('pageRewards').style.display === "block";
+    updateRedeemerTickerVisibility(onRewards);
+  }catch(err){
+    console.warn("loadRedeemerTicker error:", err);
+  }
+}
+
 function incrementReaderCount(){
   db.collection('siteStats').doc('readers').set({
     totalReaders: firebase.firestore.FieldValue.increment(1)

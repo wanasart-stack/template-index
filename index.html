@@ -6298,11 +6298,10 @@ function showToast(text){
    แสดง 30 รายการล่าสุด วิ่งวนต่อเนื่อง ไม่มีรายการก็ซ่อนแถบไว้ */
 let redeemerTickerHasItems = false;
 function escHtmlTicker(t){ return String(t == null ? "" : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function recordRedeemerPublic(rewardTitle){
+function recordRedeemerPublic(){
   try{
-    const reward = String(rewardTitle || "").replace(/\s*\(จัดส่งทางไปรษณีย์\)\s*$/, "").slice(0, 60);
     db.collection('siteStats').doc('redeemers').set({
-      items: firebase.firestore.FieldValue.arrayUnion({ name: String(currentUserName || "นักอ่าน").slice(0, 40), reward, ts: Date.now() })
+      items: firebase.firestore.FieldValue.arrayUnion({ name: String(currentUserName || "นักอ่าน").slice(0, 40), ts: Date.now() })
     }, { merge: true }).catch(err => console.warn("recordRedeemerPublic error:", err));
   }catch(err){ console.warn("recordRedeemerPublic error:", err); }
 }
@@ -6315,9 +6314,15 @@ async function loadRedeemerTicker(){
     const snap = await withTimeout(db.collection('siteStats').doc('redeemers').get(), 8000, 'redeemers');
     const items = (snap.exists && Array.isArray(snap.data().items)) ? snap.data().items.slice() : [];
     items.sort((a, b)=> (a.ts || 0) - (b.ts || 0));
-    const recent = items.slice(-30).reverse();   // ล่าสุดขึ้นก่อน
+    // แสดงเฉพาะชื่อ (ไม่แสดงรางวัล/ข้อมูลอื่น) และไม่ซ้ำชื่อ เพื่อความเป็นส่วนตัว
+    const seen = new Set();
+    const recent = [];
+    for(let i = items.length - 1; i >= 0 && recent.length < 30; i--){
+      const nm = String(items[i].name || "").trim();
+      if(nm && !seen.has(nm)){ seen.add(nm); recent.push({ name: nm }); }
+    }
     if(recent.length === 0){ redeemerTickerHasItems = false; updateRedeemerTickerVisibility(false); return; }
-    const one = recent.map(it => `<span class="redeemer-ticker-item"><b>${escHtmlTicker(it.name)}</b> แลก ${escHtmlTicker(it.reward)}</span>`).join('');
+    const one = recent.map(it => `<span class="redeemer-ticker-item"><b>${escHtmlTicker(it.name)}</b></span>`).join('');
     const track = document.getElementById('redeemerTrack');
     track.innerHTML = one + one;   // ซ้ำสองชุดเพื่อให้วิ่งวนต่อเนื่องไม่มีช่องว่าง
     track.style.animationDuration = Math.max(20, recent.length * 5) + "s";

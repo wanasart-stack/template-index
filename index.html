@@ -2754,6 +2754,13 @@ const checkSvg = `<svg width="30" height="30" viewBox="0 0 24 24" fill="none"><p
 let books = [];
 let rewards = [];
 
+function withTimeout(promise, ms, label){
+  return new Promise((resolve, reject)=>{
+    const t = setTimeout(()=> reject(new Error("timeout:" + (label || ""))), ms);
+    promise.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+  });
+}
+
 /* ---------------------------------------------------------------
    แคชรายการหนังสือไว้ในเครื่องผู้ใช้ (IndexedDB) เพื่อให้เปิดเว็บเร็วและอ่าน
    Firestore น้อยลง ใช้ร่วมกับเอกสาร content/_catalog ที่ admin อัปเดตทุกครั้ง
@@ -2763,26 +2770,40 @@ let rewards = [];
      - ไม่มีแคช/แคชเก่ากว่า 12 ชม./ข้อมูลไม่ครบ -> โหลดทั้งหมดแบบเดิม แล้วบันทึกแคช
    เอกสาร _catalog ไม่มี field "order" จึงไม่ปนเข้ามาในรายการหนังสือ */
 const CATALOG_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+
+/* IndexedDB บนมือถือ (โดยเฉพาะ iPhone/Safari และเบราว์เซอร์ในแอป เช่น LINE, Facebook) บางครั้ง
+   "ค้างเงียบ ๆ" ไม่ตอบกลับเลย ถ้ารอไปเรื่อย ๆ หน้าล็อกอินจะค้างตลอดไป จึงจำกัดเวลาทุกการเข้าถึง
+   (1.5 วินาที) แล้วถือว่าไม่มีแคช ไปโหลดจาก Firestore ตามปกติแทน */
+let idbBroken = false;
+function idbRace(promise, ms){
+  return new Promise(resolve=>{
+    const t = setTimeout(()=>{ idbBroken = true; resolve(null); }, ms);
+    promise.then(v => { clearTimeout(t); resolve(v); }, () => { clearTimeout(t); resolve(null); });
+  });
+}
 function idbOpenCache(){
   return new Promise((resolve, reject)=>{
     const r = indexedDB.open('readerCache', 1);
     r.onupgradeneeded = ()=> r.result.createObjectStore('kv');
     r.onsuccess = ()=> resolve(r.result);
     r.onerror = ()=> reject(r.error);
+    r.onblocked = ()=> reject(new Error("idb blocked"));
   });
 }
 async function idbCacheGet(k){
-  try{
+  if(idbBroken || typeof indexedDB === "undefined") return null;
+  return idbRace((async ()=>{
     const d = await idbOpenCache();
     return await new Promise((resolve, reject)=>{
       const q = d.transaction('kv').objectStore('kv').get(k);
-      q.onsuccess = ()=> resolve(q.result);
+      q.onsuccess = ()=> resolve(q.result || null);
       q.onerror = ()=> reject(q.error);
     });
-  }catch(e){ return null; }
+  })(), 1500);
 }
 async function idbCacheSet(k, v){
-  try{
+  if(idbBroken || typeof indexedDB === "undefined") return;
+  await idbRace((async ()=>{
     const d = await idbOpenCache();
     await new Promise((resolve, reject)=>{
       const tx = d.transaction('kv', 'readwrite');
@@ -2790,7 +2811,8 @@ async function idbCacheSet(k, v){
       tx.oncomplete = resolve;
       tx.onerror = ()=> reject(tx.error);
     });
-  }catch(e){ /* เก็บแคชไม่ได้ก็ไม่เป็นไร รอบหน้าโหลดเต็มตามปกติ */ }
+    return true;
+  })(), 4000);
 }
 function stripForCache(list){
   return list.map(b=>{ const c = Object.assign({}, b); delete c.createdAt; delete c.updatedAt; return c; });
@@ -2803,7 +2825,7 @@ async function loadBooksSmart(){
   const cached = await idbCacheGet('catalog');
   let meta = null;
   try{
-    const m = await db.collection('content').doc('_catalog').get();
+    const m = await withTimeout(db.collection('content').doc('_catalog').get(), 8000, 'catalog');
     if(m.exists) meta = m.data();
   }catch(e){ meta = null; }
   const stamp = (meta && meta.updatedAt && typeof meta.updatedAt.toMillis === "function") ? meta.updatedAt.toMillis() : null;
@@ -2817,7 +2839,7 @@ async function loadBooksSmart(){
     if(Array.isArray(meta.keys) && cached.stamp && stamp > cached.stamp){
       try{
         const since = firebase.firestore.Timestamp.fromMillis(cached.stamp - 120000);
-        const q = await db.collection('content').where('updatedAt', '>', since).get();
+        const q = await withTimeout(db.collection('content').where('updatedAt', '>', since).get(), 15000, 'delta');
         const map = new Map(cached.books.map(b => [b.key, b]));
         q.docs.forEach(d => { if(!d.id.startsWith('_')) map.set(d.id, { key: d.id, ...d.data() }); });
         if(meta.keys.every(k => map.has(k))){
@@ -2832,7 +2854,7 @@ async function loadBooksSmart(){
   }
 
   try{
-    const snap = await db.collection('content').orderBy('order').get();
+    const snap = await withTimeout(db.collection('content').orderBy('order').get(), 20000, 'content');
     books = snap.empty ? DEFAULT_BOOKS : snap.docs.map(d => ({ key: d.id, ...d.data() }));
     if(stamp && !snap.empty) idbCacheSet('catalog', { stamp, savedAt: Date.now(), books: stripForCache(books) });
   }catch(err){
@@ -2844,7 +2866,7 @@ async function loadBooksSmart(){
 async function loadContentFromFirestore(){
   /* โหลดหนังสือกับรางวัลพร้อมกัน */
   const booksPromise = loadBooksSmart();
-  const rewardsPromise = db.collection('rewardsCatalog').orderBy('order').get()
+  const rewardsPromise = withTimeout(db.collection('rewardsCatalog').orderBy('order').get(), 15000, 'rewards')
     .then(snap => { rewards = snap.empty ? DEFAULT_REWARDS : snap.docs.map(d => ({ key: d.id, ...d.data() })); })
     .catch(err => { console.warn("loadContentFromFirestore(rewards) error:", err); rewards = DEFAULT_REWARDS; });
   await Promise.all([booksPromise, rewardsPromise]);
@@ -4713,10 +4735,17 @@ async function enterAppForUser(user, name){
      เน็ตที่ช้ากว่าปกติ initApp() อาจทำงานเสร็จ "หลัง" ขั้นตอนด้านล่างนี้ แล้ว
      ไปเขียนทับ state กลับเป็น "ยังไม่ได้อ่าน" หมดทุกเล่มอีกรอบ (เคยเกิดบั๊กนี้
      มาแล้วจริง ๆ ตอนอัปเดตไฟล์รอบก่อน) */
-  await appReadyPromise;
+  try{
+    await withTimeout(appReadyPromise, 25000, 'appReady');
+  }catch(e){
+    console.warn("appReadyPromise timeout:", e);
+    if(!books || books.length === 0) books = DEFAULT_BOOKS;
+    if(!rewards || rewards.length === 0) rewards = DEFAULT_REWARDS;
+    initStateAndAttempts();
+  }
 
   currentUserDocRef = db.collection('users').doc(user.uid);
-  let snap = await currentUserDocRef.get();
+  let snap = await withTimeout(currentUserDocRef.get(), 20000, 'userdoc');
 
   if(!snap.exists){
     await currentUserDocRef.set({
@@ -4927,16 +4956,26 @@ async function doLogin(name, pass){
   pendingLoginName = name;
 
   try{
+    /* ลองเข้าสู่ระบบก่อนเสมอ (คนส่วนใหญ่เป็นผู้ใช้เดิม) จะได้เรียก Firebase Auth แค่ครั้งเดียว
+       เดิมทุกการล็อกอินจะลอง "สมัครใหม่" ก่อนแล้วค่อยเข้าสู่ระบบ = เรียก 2 ครั้ง และการสมัครซ้ำ ๆ
+       จากเครือข่ายเดียวกัน (เช่นนักเรียนหลายคนในห้อง) อาจโดน Firebase จำกัดความถี่จนล็อกอินช้า/ค้าง */
     try{
-      await auth.createUserWithEmailAndPassword(email, pass);
-      /* ชื่อนี้ยังไม่เคยมีบัญชีมาก่อน - สร้างบัญชีใหม่สำเร็จ (สมัครครั้งแรก) */
+      await auth.signInWithEmailAndPassword(email, pass);
     }catch(err){
-      if(err.code === 'auth/email-already-in-use'){
-        /* กรณีปกติของผู้ใช้เดิม: ชื่อนี้มีบัญชีอยู่แล้ว -> เข้าสู่ระบบด้วยรหัสผ่าน
-           ที่กรอกจริง ๆ (แม่นยำกว่าเดิม เพราะ error ที่ได้จาก signIn ตรงนี้
-           อย่าง wrong-password / invalid-credential ไม่กำกวมเหมือนตอนเช็คจาก
-           createUser อย่างเดียว) */
-        await auth.signInWithEmailAndPassword(email, pass);
+      const code = err && err.code;
+      if(code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials'){
+        /* อาจเป็นชื่อใหม่ที่ยังไม่เคยมีบัญชี (สมัครครั้งแรก) หรือรหัสผ่านผิด - ลองสมัครดู ถ้าชื่อนี้
+           มีบัญชีอยู่แล้ว (email-already-in-use) แปลว่ารหัสผ่านผิดจริง */
+        try{
+          await auth.createUserWithEmailAndPassword(email, pass);
+        }catch(err2){
+          if(err2 && err2.code === 'auth/email-already-in-use'){
+            const wrong = new Error("wrong password");
+            wrong.code = 'auth/wrong-password';
+            throw wrong;
+          }
+          throw err2;
+        }
       } else {
         throw err;
       }
@@ -4950,6 +4989,8 @@ async function doLogin(name, pass){
     let msg = "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่";
     if(err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') msg = "รหัสผ่านไม่ตรงกับชื่อนี้ กรุณาตรวจสอบรหัสผ่าน หรือใช้ชื่ออื่น";
     if(err.code === 'auth/weak-password') msg = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+    if(err.code === 'auth/too-many-requests') msg = "มีการพยายามเข้าสู่ระบบจากเครือข่ายนี้มากเกินไป ระบบหยุดรับชั่วคราว กรุณารอสักครู่ (ประมาณ 5-15 นาที) แล้วลองใหม่";
+    if(err.code === 'auth/network-request-failed') msg = "เชื่อมต่ออินเทอร์เน็ตไม่ได้ กรุณาตรวจสอบสัญญาณแล้วลองใหม่";
     errorEl.textContent = msg;
     errorEl.style.display = "block";
     return false;
@@ -5171,7 +5212,13 @@ document.getElementById('loginForm').addEventListener('submit', async (e)=>{
   errorEl.style.display = "none";
 
   if(submitBtnEl){ submitBtnEl.disabled = true; submitBtnEl.textContent = "กำลังเข้าสู่ระบบ..."; }
-  const loginOk = await doLogin(name, pass);
+  let loginOk;
+  try{
+    loginOk = await withTimeout(doLogin(name, pass), 30000, 'login');
+  }catch(e){
+    loginOk = false;
+    showLoginProblem(e);
+  }
   if(!loginOk){
     resetLoginButton();
   } else {
@@ -5183,6 +5230,22 @@ document.getElementById('loginForm').addEventListener('submit', async (e)=>{
     window._loginResetTimer = setTimeout(resetLoginButton, 30000);
   }
 });
+function showLoginProblem(err){
+  const errorEl = document.getElementById('loginError');
+  if(!errorEl) return;
+  const code = (err && err.code) || "";
+  const msg = (err && err.message) || "";
+  let text = "เชื่อมต่อระบบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดเข้าสู่ระบบใหม่";
+  if(code === 'resource-exhausted' || /quota/i.test(msg)){
+    text = "ระบบฐานข้อมูลเต็มโควตาการใช้งานของวันนี้ กรุณาลองใหม่อีกครั้งในวันพรุ่งนี้ หรือแจ้งผู้ดูแลระบบ";
+  } else if(code === 'permission-denied'){
+    text = "ไม่มีสิทธิ์อ่านข้อมูล กรุณาแจ้งผู้ดูแลระบบ";
+  } else if(/^timeout/.test(msg)){
+    text = "ระบบตอบสนองช้ากว่าปกติ กรุณากดเข้าสู่ระบบใหม่อีกครั้ง";
+  }
+  errorEl.textContent = text;
+  errorEl.style.display = "block";
+}
 function resetLoginButton(){
   clearTimeout(window._loginResetTimer);
   const btn = document.querySelector('#loginForm button[type="submit"]');
@@ -5208,6 +5271,7 @@ auth.onAuthStateChanged(async (user)=>{
   }catch(err){
     console.warn("enterAppForUser error:", err);
     enteringUid = null;
+    showLoginProblem(err);
   }
   resetLoginButton();
 });

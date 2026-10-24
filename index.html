@@ -4111,25 +4111,58 @@ function weeklyPopularDocId(weeksAgo){
   d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7) - 7 * (weeksAgo || 0));
   return "popular_" + d.toISOString().slice(0, 10);
 }
+function thaiTodayStr(){ return new Date(Date.now() + 7*3600*1000).toISOString().slice(0, 10); }
 function recordBookClick(bookKey){
   try{
+    /* เก็บยอดแยกรายวัน: days.<วันที่>.<รหัสหนังสือ> */
     db.collection('siteStats').doc(weeklyPopularDocId()).set(
-      { counts: { [bookKey]: firebase.firestore.FieldValue.increment(1) } }, { merge: true }
+      { days: { [thaiTodayStr()]: { [bookKey]: firebase.firestore.FieldValue.increment(1) } } }, { merge: true }
     ).catch(err => console.warn("recordBookClick error:", err));
   }catch(err){ console.warn("recordBookClick error:", err); }
 }
-/* อันดับของสัปดาห์นี้มาก่อน ถ้ายังมีไม่ถึง 7 เล่ม (หรือยังไม่มีใครคลิกเลย) จะเติมจาก
-   อันดับของสัปดาห์ก่อน ๆ ต่อท้าย (ย้อนดูได้สูงสุด 8 สัปดาห์) ลำดับเดิมจึงคงอยู่ */
+
+/* อันดับที่แสดง "ขยับวันละครั้ง": คำนวณจากยอดของวันก่อนหน้าทั้งหมดในสัปดาห์นี้ (ไม่รวมวันนี้)
+   ถ้ายังไม่ถึง 7 เล่ม เติมต่อท้ายจากอันดับสัปดาห์ก่อน ๆ (ย้อนได้สูงสุด 8 สัปดาห์)
+   ผลลัพธ์เก็บไว้ในเครื่องผู้ใช้ต่อวัน → เปิดหน้าซ้ำในวันเดียวกันไม่เสียค่าอ่านเพิ่มเลย
+   (ปกติอ่าน Firestore แค่ 1-2 ครั้งต่อคนต่อวัน) */
+function sumDayCounts(data, beforeDay){
+  const out = {};
+  const add = (m)=>{ Object.keys(m || {}).forEach(k=>{ if(typeof m[k] === "number") out[k] = (out[k] || 0) + m[k]; }); };
+  add(data.counts);   // ข้อมูลรูปแบบเก่า (ไม่แยกวัน)
+  const days = data.days || {};
+  Object.keys(days).forEach(day=>{ if(!beforeDay || day < beforeDay) add(days[day]); });
+  return out;
+}
+function rankKeys(counts){
+  return Object.keys(counts).filter(k => counts[k] > 0).sort((a, b)=> counts[b] - counts[a]);
+}
 async function loadWeeklyPopular(){
+  const today = thaiTodayStr();
+  const cacheKey = "popularRank:" + today;
+  try{
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
+    if(Array.isArray(cached)){
+      weeklyPopularKeys = cached;
+      if(activeCategoryKey === null) render();
+      return;
+    }
+  }catch(e){}
   try{
     const keys = [];
-    for(let w = 0; w < 8 && keys.length < 7; w++){
+    for(let w = 0; w < 9 && keys.length < 7; w++){
       const snap = await withTimeout(db.collection('siteStats').doc(weeklyPopularDocId(w)).get(), 8000, 'popular');
-      const counts = (snap.exists && snap.data().counts) || {};
-      Object.keys(counts).filter(k => counts[k] > 0).sort((a, b)=> counts[b] - counts[a])
-        .forEach(k=>{ if(keys.length < 7 && !keys.includes(k)) keys.push(k); });
+      const data = snap.exists ? (snap.data() || {}) : {};
+      const counts = sumDayCounts(data, w === 0 ? today : null);
+      rankKeys(counts).forEach(k=>{ if(keys.length < 7 && !keys.includes(k)) keys.push(k); });
     }
     weeklyPopularKeys = keys;
+    try{
+      localStorage.setItem(cacheKey, JSON.stringify(keys));
+      for(let i = localStorage.length - 1; i >= 0; i--){
+        const k = localStorage.key(i);
+        if(k && k.startsWith("popularRank:") && k !== cacheKey) localStorage.removeItem(k);
+      }
+    }catch(e){}
     if(activeCategoryKey === null) render();
   }catch(err){
     console.warn("loadWeeklyPopular error:", err);
@@ -4148,7 +4181,10 @@ function render(){
   /* แถว "เล่มแนะนำ" ขึ้นเฉพาะตอนดูหมวดหมู่ "ทั้งหมด" เท่านั้น เพราะถ้าเลือก
      ดูหมวดใดหมวดหนึ่งอยู่แล้ว การมีแถวนี้ปนอยู่ด้วยจะดูสับสนเกินไป */
   if(activeCategoryKey === null){
-    const popularBooks = (weeklyPopularKeys || []).map(k=> books.find(x=> x.key === k)).filter(Boolean).slice(0, 7);
+    let popularBooks = (weeklyPopularKeys || []).map(k=> books.find(x=> x.key === k)).filter(Boolean).slice(0, 7);
+    /* ถ้ายังไม่มีข้อมูลยอดนิยมเลย (ยังไม่เคยมีใครคลิก หรือโหลดไม่ได้) ใช้ "เล่มแนะนำ" ที่แอดมินติ๊กไว้แทนไปก่อน */
+    const popularIsFallback = popularBooks.length === 0;
+    if(popularIsFallback) popularBooks = books.filter(b=> b.featured).slice(0, 7);
     if(popularBooks.length > 0){
       const featSection = document.createElement('section');
       featSection.className = "featured-section";
@@ -4160,7 +4196,7 @@ function render(){
           <div class="shelf-icon-badge">
             <svg class="shelf-icon" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.8-4.6 6.6-.9z" fill="#fff"/></svg>
           </div>
-          <h2>🔥 หนังสือยอดนิยมประจำสัปดาห์</h2>
+          <h2>${popularIsFallback ? '🌟 เล่มแนะนำ' : '🔥 หนังสือยอดนิยมประจำสัปดาห์'}</h2>
         </div>
       `;
       featSection.appendChild(featHeader);

@@ -431,19 +431,20 @@
     display:none;
     align-items:center;
     gap:10px;
-    background:rgba(180,144,63,0.14);
-    border:1px solid rgba(180,144,63,0.35);
+    background:rgba(255,255,255,0.10);
+    border:1px solid rgba(224,181,99,0.55);
     border-radius:999px;
     padding:7px 14px;
-    margin:0 auto 12px;
-    max-width:1100px;
+    margin:16px auto 4px;
+    width:calc(100% - 32px);
+    max-width:760px;
     overflow:hidden;
   }
   .redeemer-ticker-label{
     flex:0 0 auto;
     font-size:12.5px;
     font-weight:700;
-    color:var(--brass);
+    color:var(--brass-bright);
     white-space:nowrap;
   }
   .redeemer-ticker-viewport{ flex:1 1 auto; overflow:hidden; min-width:0; }
@@ -454,7 +455,7 @@
     will-change:transform;
   }
   .redeemer-ticker-track:hover{ animation-play-state:paused; }
-  .redeemer-ticker-item{ font-size:13.5px; color:var(--ink); padding-right:34px; }
+  .redeemer-ticker-item{ font-size:13.5px; color:var(--cream); padding-right:34px; }
   .redeemer-ticker-item b{ font-weight:700; }
   @keyframes redeemerScroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
   .category-filter-bar{
@@ -1471,13 +1472,13 @@
       <button class="nav-btn" id="navToRewardsBtn" type="button">🎁 แลกแต้มเป็นรางวัล</button>
       <button class="nav-btn" id="navToLibraryBtn" type="button" style="display:none;">📚 กลับไปหน้าอ่านหนังสือ</button>
     </div>
-    <div class="redeemer-ticker" id="redeemerTicker">
-      <span class="redeemer-ticker-label">🎁 แลกรางวัลแล้ว</span>
-      <div class="redeemer-ticker-viewport"><div class="redeemer-ticker-track" id="redeemerTrack"></div></div>
-    </div>
     <div class="guide-btn-row" id="guideBtnRow">
       <button class="guide-btn" id="openReadingGuideBtn" type="button">📖 คู่มือการอ่าน</button>
       <span class="reader-count-pill" id="readerCountPill" style="display:none;"></span>
+    </div>
+    <div class="redeemer-ticker" id="redeemerTicker">
+      <span class="redeemer-ticker-label">🎁 แลกรางวัลแล้ว</span>
+      <div class="redeemer-ticker-viewport"><div class="redeemer-ticker-track" id="redeemerTrack"></div></div>
     </div>
     <div class="category-filter-bar" id="categoryFilterBar"></div>
   </header>
@@ -4098,6 +4099,43 @@ function renderCategoryFilterBar(){
   });
 }
 
+/* ---------------------------------------------------------------
+   หนังสือยอดนิยมประจำสัปดาห์ (นับจากการคลิกเปิดอ่าน)
+   เก็บใน Firestore: siteStats/popular_<วันจันทร์ของสัปดาห์> -> counts:{bookKey:จำนวนครั้ง}
+   สัปดาห์เริ่มวันจันทร์ ตามเวลาไทย นับสัปดาห์ใหม่โดยอัตโนมัติ
+   นับทุกครั้งที่คลิกอ่าน (คนเดียวอ่านเล่มเดิมซ้ำก็นับรวม)
+   การนับเป็นแบบ "พยายามเขียน" ถ้าเขียนไม่ได้ก็ไม่กระทบการอ่าน */
+let weeklyPopularKeys = null;
+function weeklyPopularDocId(weeksAgo){
+  const d = new Date(Date.now() + 7*3600*1000);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7) - 7 * (weeksAgo || 0));
+  return "popular_" + d.toISOString().slice(0, 10);
+}
+function recordBookClick(bookKey){
+  try{
+    db.collection('siteStats').doc(weeklyPopularDocId()).set(
+      { counts: { [bookKey]: firebase.firestore.FieldValue.increment(1) } }, { merge: true }
+    ).catch(err => console.warn("recordBookClick error:", err));
+  }catch(err){ console.warn("recordBookClick error:", err); }
+}
+/* อันดับของสัปดาห์นี้มาก่อน ถ้ายังมีไม่ถึง 7 เล่ม (หรือยังไม่มีใครคลิกเลย) จะเติมจาก
+   อันดับของสัปดาห์ก่อน ๆ ต่อท้าย (ย้อนดูได้สูงสุด 8 สัปดาห์) ลำดับเดิมจึงคงอยู่ */
+async function loadWeeklyPopular(){
+  try{
+    const keys = [];
+    for(let w = 0; w < 8 && keys.length < 7; w++){
+      const snap = await withTimeout(db.collection('siteStats').doc(weeklyPopularDocId(w)).get(), 8000, 'popular');
+      const counts = (snap.exists && snap.data().counts) || {};
+      Object.keys(counts).filter(k => counts[k] > 0).sort((a, b)=> counts[b] - counts[a])
+        .forEach(k=>{ if(keys.length < 7 && !keys.includes(k)) keys.push(k); });
+    }
+    weeklyPopularKeys = keys;
+    if(activeCategoryKey === null) render();
+  }catch(err){
+    console.warn("loadWeeklyPopular error:", err);
+  }
+}
+
 function render(){
   const root = document.getElementById('libraryRoot');
   root.innerHTML = "";
@@ -4110,8 +4148,8 @@ function render(){
   /* แถว "เล่มแนะนำ" ขึ้นเฉพาะตอนดูหมวดหมู่ "ทั้งหมด" เท่านั้น เพราะถ้าเลือก
      ดูหมวดใดหมวดหนึ่งอยู่แล้ว การมีแถวนี้ปนอยู่ด้วยจะดูสับสนเกินไป */
   if(activeCategoryKey === null){
-    const featuredBooks = books.filter(b=> b.featured);
-    if(featuredBooks.length > 0){
+    const popularBooks = (weeklyPopularKeys || []).map(k=> books.find(x=> x.key === k)).filter(Boolean).slice(0, 7);
+    if(popularBooks.length > 0){
       const featSection = document.createElement('section');
       featSection.className = "featured-section";
 
@@ -4122,14 +4160,14 @@ function render(){
           <div class="shelf-icon-badge">
             <svg class="shelf-icon" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.8-4.6 6.6-.9z" fill="#fff"/></svg>
           </div>
-          <h2>🌟 เล่มแนะนำ</h2>
+          <h2>🔥 หนังสือยอดนิยมประจำสัปดาห์</h2>
         </div>
       `;
       featSection.appendChild(featHeader);
 
       const featRow = document.createElement('div');
       featRow.className = "shelf-row";
-      featuredBooks.forEach(b=> featRow.appendChild(buildBookCard(b)));
+      popularBooks.forEach(b=> featRow.appendChild(buildBookCard(b)));
       featSection.appendChild(featRow);
 
       root.appendChild(featSection);
@@ -4842,6 +4880,7 @@ async function enterAppForUser(user, name){
      ด้วย state ที่เพิ่งใส่ผลอ่านของนักอ่านคนนี้เข้าไปก็พอ */
   render();
   loadRedeemerTicker();
+  loadWeeklyPopular();
 }
 
 /* Runs as a Firestore transaction so two devices/tabs finishing a quiz
@@ -5424,6 +5463,7 @@ function openModal(bookKey){
     showToast("เนื้อหาตอนนี้ยังไม่พร้อม กรุณาลองใหม่อีกครั้ง");
     return;
   }
+  recordBookClick(unit.parentBookKey || bookKey);
   const cat = findCategoryByKey(unit.categoryKey);
   document.getElementById('readyZoneTag').textContent = cat.title;
   document.getElementById('readyTitle').textContent = unit.title;

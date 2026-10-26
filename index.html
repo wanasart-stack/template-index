@@ -649,6 +649,27 @@
   }
 
   /* ---------- Rewards: single scan-to-redeem CTA ---------- */
+  .rewards-day-notice{
+    margin:0 0 14px; padding:10px 14px;
+    background:#E3F3E6; border:1.5px solid #2E7D4F; border-radius:10px;
+    color:#1B6B3A; font-size:14.5px; font-weight:700; line-height:1.5;
+  }
+  .rewards-intent-cta{ text-align:center; margin:18px 0 6px; }
+  .rewards-intent-cta .btn{ width:auto; padding:13px 28px; }
+  .intent-headline{
+    font-size:19px; font-weight:800; line-height:1.45; text-align:center;
+    color:#7A2E0E; background:#FFF1D6; border:2px solid #E0B563; border-radius:12px;
+    padding:14px 14px; margin:0 0 18px;
+  }
+  .intent-item{ display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+  .intent-item select{ flex:1 1 auto; min-width:0; }
+  .intent-qty{ display:flex; align-items:center; gap:4px; flex:0 0 auto; }
+  .intent-qty input{ width:54px; text-align:center; padding-left:4px; padding-right:4px; }
+  .intent-qty button, .intent-del{
+    width:34px; height:38px; border:1px solid rgba(0,0,0,0.25); border-radius:8px;
+    background:#fff; font-size:18px; font-weight:700; cursor:pointer; color:var(--ink);
+  }
+  .intent-del{ color:#b00020; }
   .rewards-scan-cta{
     margin-top:26px;
     padding:24px 20px;
@@ -1452,7 +1473,7 @@
       </form>
     </div>
     <div class="login-footer">
-      <div>สร้างสรรค์โดย นายวนศาสตร์ วัฒนาสกุลลี ครู สกร.ระดับอำเภอเทิง</div>
+      <div style="text-align:center;">สร้างสรรค์โดย งานการเรียนรู้ตลอดชีวิต<br>สกร.ระดับอำเภอเทิง</div>
     </div>
   </div>
 </div>
@@ -1493,7 +1514,7 @@
 
   <footer class="site-footer">
     <div class="org-line">ศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอเทิง</div>
-    <div>สร้างสรรค์โดย นายวนศาสตร์ วัฒนาสกุลลี ครู สกร.ระดับอำเภอเทิง</div>
+    <div style="text-align:center;">สร้างสรรค์โดย งานการเรียนรู้ตลอดชีวิต<br>สกร.ระดับอำเภอเทิง</div>
   </footer>
 </div>
 
@@ -1613,6 +1634,37 @@
     <canvas id="qrScanCanvas" style="display:none;"></canvas>
     <p class="qr-scan-status" id="qrScanStatus">กำลังเปิดกล้อง...</p>
     <button class="btn secondary" id="qrScanCloseBtn">ปิด</button>
+  </div>
+
+  <div class="modal wide" id="modalIntentForm" style="display:none;">
+    <div class="intent-headline">แจ้งความประสงค์แลกรางวัล<br>เพื่อครูจะได้เตรียมรางวัลเพียงพอต่อการแลก</div>
+    <div class="field">
+      <label>ชื่อ-สกุล</label>
+      <input type="text" id="intentName" placeholder="ชื่อ-นามสกุล">
+    </div>
+    <div class="field">
+      <label>ระดับชั้น</label>
+      <select id="intentLevel">
+        <option value="">-- เลือกระดับชั้น --</option>
+        <option value="ระดับประถมศึกษา">ระดับประถมศึกษา</option>
+        <option value="ระดับมัธยมศึกษาตอนต้น">ระดับมัธยมศึกษาตอนต้น</option>
+        <option value="ระดับมัธยมศึกษาตอนปลาย">ระดับมัธยมศึกษาตอนปลาย</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ศูนย์ / ครูประจำกลุ่ม</label>
+      <select id="intentCenter">
+        <option value="">-- เลือกศูนย์ / ครูประจำกลุ่ม --</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>รางวัลที่แลก และจำนวนชิ้น</label>
+      <div id="intentItems"></div>
+      <button class="btn secondary" id="intentAddItemBtn" type="button" style="width:auto; padding:9px 18px;">+ เพิ่มรางวัลอีกรายการ</button>
+    </div>
+    <p class="login-error" id="intentError" style="display:none;"></p>
+    <button class="btn" id="intentSubmitBtn" type="button">ส่งข้อมูลแจ้งความประสงค์</button>
+    <button class="btn secondary" id="intentCancelBtn" type="button">ยกเลิก</button>
   </div>
 
   <div class="modal wide" id="modalKpchForm" style="display:none;">
@@ -4314,10 +4366,20 @@ function renderRewards(){
     consumeSection.className = "rewards-goods-section";
     consumeSection.innerHTML = `<h3>🍬 แลกแต้มเป็นสินค้าบริโภค <span class="rewards-section-note">(สแกนแลกรางวัลได้ที่ สกร.ระดับอำเภอเทิง)</span></h3>`;
 
+    const dayNotice = document.createElement('div');
+    dayNotice.className = "rewards-day-notice";
+    dayNotice.textContent = "✅ สามารถแลกรางวัลได้วันที่ 16 ของทุก ๆ เดือน แต่หากตรงกับวันหยุดให้มาแลกวันทำการถัดไป";
+    consumeSection.appendChild(dayNotice);
+
     const row = document.createElement('div');
     row.className = "rewards-row";
     consumables.forEach(r=> row.appendChild(buildRewardCard(r)));
     consumeSection.appendChild(row);
+
+    const intentCta = document.createElement('div');
+    intentCta.className = "rewards-intent-cta";
+    intentCta.innerHTML = `<button class="btn" id="openIntentBtn" type="button">📝 แจ้งความประสงค์ขอแลกรางวัล</button>`;
+    consumeSection.appendChild(intentCta);
 
     const scanCta = document.createElement('div');
     scanCta.className = "rewards-scan-cta";
@@ -4329,6 +4391,7 @@ function renderRewards(){
 
     root.appendChild(consumeSection);
     document.getElementById('scanQrBtn').addEventListener('click', openQrScanModal);
+    document.getElementById('openIntentBtn').addEventListener('click', openIntentForm);
   }
 
   /* ---------- ส่วนที่ 3: แลกแต้มเป็นสินค้าอุปโภค (กรอกที่อยู่เพื่อจัดส่ง) ---------- */
@@ -4428,6 +4491,105 @@ function openKpchForm(){
   document.getElementById('modalKpchForm').style.display = "block";
   document.getElementById('overlay').classList.add('show');
 }
+
+/* ===================================================================
+   แจ้งความประสงค์ขอแลกรางวัล (สินค้าบริโภค) - ไม่หักแต้ม เป็นเพียงการแจ้งให้ครูเตรียมของ
+   บันทึกที่ collection "rewardIntents" รายการรางวัลใน dropdown ดึงจากแคตตาล็อกสินค้าบริโภค
+   ปัจจุบัน (เพิ่ม/ลบที่ admin แล้วขึ้นที่นี่เองทุกครั้งที่เปิดฟอร์ม) */
+function intentRewardOptionsHtml(){
+  const list = rewards.filter(r=> (r.rewardType || "consumable") !== "durable" && r.key !== "secret")
+    .sort((a, b)=> rewardSortValue(a) - rewardSortValue(b));
+  return `<option value="">-- เลือกรางวัล --</option>` + list.map(r=>
+    `<option value="${escHtmlTicker(r.key)}">${escHtmlTicker(r.title)}${r.cost !== undefined && r.cost !== "-" ? " (" + escHtmlTicker(r.cost) + " แต้ม)" : ""}</option>`).join('');
+}
+function addIntentItemRow(){
+  const wrap = document.getElementById('intentItems');
+  const row = document.createElement('div');
+  row.className = "intent-item";
+  row.innerHTML = `
+    <select class="intent-reward">${intentRewardOptionsHtml()}</select>
+    <div class="intent-qty">
+      <button type="button" class="intent-minus" aria-label="ลด">−</button>
+      <input type="number" class="intent-count" min="1" max="99" step="1" value="1" inputmode="numeric">
+      <button type="button" class="intent-plus" aria-label="เพิ่ม">+</button>
+    </div>
+    <button type="button" class="intent-del" aria-label="ลบรายการ">✕</button>`;
+  const cnt = row.querySelector('.intent-count');
+  const clamp = v => Math.max(1, Math.min(99, parseInt(v, 10) || 1));
+  row.querySelector('.intent-minus').addEventListener('click', ()=>{ cnt.value = clamp(parseInt(cnt.value, 10) - 1); });
+  row.querySelector('.intent-plus').addEventListener('click', ()=>{ cnt.value = clamp(parseInt(cnt.value, 10) + 1); });
+  cnt.addEventListener('change', ()=>{ cnt.value = clamp(cnt.value); });
+  row.querySelector('.intent-del').addEventListener('click', ()=>{
+    if(wrap.children.length > 1) row.remove();
+  });
+  wrap.appendChild(row);
+}
+function openIntentForm(){
+  const sel = document.getElementById('intentCenter');
+  if(sel.options.length <= 1){
+    KPCH_CENTERS.forEach(name=>{
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name; sel.appendChild(opt);
+    });
+  }
+  document.getElementById('intentName').value = (typeof currentUserName === "string" ? currentUserName : "") || "";
+  document.getElementById('intentLevel').value = "";
+  sel.value = "";
+  document.getElementById('intentItems').innerHTML = "";
+  addIntentItemRow();
+  document.getElementById('intentError').style.display = "none";
+  document.getElementById('intentSubmitBtn').disabled = false;
+  document.getElementById('intentSubmitBtn').textContent = "ส่งข้อมูลแจ้งความประสงค์";
+  hideAllModals();
+  document.getElementById('modalIntentForm').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('modalIntentForm').scrollTop = 0;
+}
+function closeIntentForm(){
+  document.getElementById('modalIntentForm').style.display = "none";
+  document.getElementById('overlay').classList.remove('show');
+}
+async function submitIntentForm(){
+  const err = document.getElementById('intentError');
+  const fail = m => { err.textContent = m; err.style.display = "block"; };
+  const name = document.getElementById('intentName').value.trim();
+  const level = document.getElementById('intentLevel').value;
+  const center = document.getElementById('intentCenter').value;
+  if(!name) return fail("กรุณากรอกชื่อ-สกุล");
+  if(!level) return fail("กรุณาเลือกระดับชั้น");
+  if(!center) return fail("กรุณาเลือกศูนย์ / ครูประจำกลุ่ม");
+  const merged = new Map();
+  for(const row of document.querySelectorAll('#intentItems .intent-item')){
+    const key = row.querySelector('.intent-reward').value;
+    const qty = Math.max(1, Math.min(99, parseInt(row.querySelector('.intent-count').value, 10) || 1));
+    if(!key) return fail("กรุณาเลือกรางวัลให้ครบทุกรายการ (หรือกด ✕ ลบรายการที่ไม่ใช้)");
+    const r = rewards.find(x=> x.key === key);
+    const prev = merged.get(key);
+    merged.set(key, { rewardKey: key, title: r ? r.title : key, qty: (prev ? prev.qty : 0) + qty });
+  }
+  if(merged.size === 0) return fail("กรุณาเลือกรางวัลอย่างน้อย 1 รายการ");
+  err.style.display = "none";
+  const btn = document.getElementById('intentSubmitBtn');
+  btn.disabled = true; btn.textContent = "กำลังส่ง...";
+  try{
+    await withTimeout(db.collection('rewardIntents').add({
+      uid: currentUserDocRef ? currentUserDocRef.id : "",
+      name, level, center,
+      items: [...merged.values()],
+      status: "pending",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    }), 15000, 'intent');
+    closeIntentForm();
+    showToast("ส่งข้อมูลแจ้งความประสงค์เรียบร้อยแล้ว ครูจะเตรียมรางวัลไว้ให้");
+  }catch(e){
+    console.warn("submitIntentForm error:", e);
+    btn.disabled = false; btn.textContent = "ส่งข้อมูลแจ้งความประสงค์";
+    fail("ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (หากยังไม่ได้ ให้แจ้งครูผู้ดูแล)");
+  }
+}
+document.getElementById('intentAddItemBtn').addEventListener('click', addIntentItemRow);
+document.getElementById('intentSubmitBtn').addEventListener('click', submitIntentForm);
+document.getElementById('intentCancelBtn').addEventListener('click', closeIntentForm);
 
 function closeKpchForm(){
   document.getElementById('modalKpchForm').style.display = "none";

@@ -4452,6 +4452,7 @@ function buildRewardCard(r){
 =================================================================== */
 const KPCH_POINTS_PER_HOUR = 300;
 const KPCH_CENTERS = [
+  "สกร.ระดับอำเภอเทิง",
   "ศกร.ระดับตำบลตับเต่า (ครูประสิทธิ วิชัย)",
   "ศกร.ระดับตำบลหงาว (ครูเด่นนภา นิทะโน)",
   "ศกร.ระดับตำบลเวียง (ครูรัชฎาภรณ์ สุริยนต์)",
@@ -4476,16 +4477,32 @@ const KPCH_CENTERS = [
   "ศรช.ระดับตำบลเวียง (ครูชินดนัย คำต๊ะ)"
 ];
 
-function populateKpchCenterOptions(){
-  const sel = document.getElementById('kpchCenter');
-  if(sel.options.length > 1) return; // เติมแค่ครั้งเดียวพอ
-  KPCH_CENTERS.forEach(name=>{
+/* รายชื่อศูนย์ที่แสดงใน dropdown: "สกร.ระดับอำเภอเทิง" เป็นอันดับแรกเสมอ ตามด้วยรายชื่อที่แอดมิน
+   จัดการไว้ที่ Firestore (siteSettings/kpchCenters) ถ้าอ่านไม่ได้จะใช้รายชื่อตั้งต้นในโค้ด */
+const CENTER_HEAD = "สกร.ระดับอำเภอเทิง";
+let centersCache = KPCH_CENTERS.slice();
+function fillCenterSelect(sel, list){
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">-- เลือกศูนย์ / ครูประจำกลุ่ม --</option>';
+  list.forEach(name=>{
     const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    sel.appendChild(opt);
+    opt.value = name; opt.textContent = name; sel.appendChild(opt);
   });
+  if(keep && list.includes(keep)) sel.value = keep;
 }
+async function refreshCenterSelects(){
+  const sels = ['kpchCenter', 'intentCenter'].map(id => document.getElementById(id)).filter(Boolean);
+  sels.forEach(sel => fillCenterSelect(sel, centersCache));   // แสดงของเดิมทันที ไม่ต้องรอ
+  try{
+    const snap = await withTimeout(db.collection('siteSettings').doc('kpchCenters').get(), 6000, 'centers');
+    const arr = snap.exists && Array.isArray(snap.data().centers) ? snap.data().centers.map(x => String(x).trim()).filter(Boolean) : null;
+    if(arr && arr.length){
+      centersCache = [CENTER_HEAD].concat(arr.filter(x => x !== CENTER_HEAD));
+      sels.forEach(sel => fillCenterSelect(sel, centersCache));
+    }
+  }catch(err){ console.warn("refreshCenterSelects error:", err); }
+}
+function populateKpchCenterOptions(){ refreshCenterSelects(); }
 
 function openKpchForm(){
   populateKpchCenterOptions();
@@ -4535,12 +4552,7 @@ function addIntentItemRow(){
 }
 function openIntentForm(){
   const sel = document.getElementById('intentCenter');
-  if(sel.options.length <= 1){
-    KPCH_CENTERS.forEach(name=>{
-      const opt = document.createElement('option');
-      opt.value = name; opt.textContent = name; sel.appendChild(opt);
-    });
-  }
+  refreshCenterSelects();
   document.getElementById('intentName').value = (typeof currentUserName === "string" ? currentUserName : "") || "";
   document.getElementById('intentLevel').value = "";
   sel.value = "";

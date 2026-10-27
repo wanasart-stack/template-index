@@ -1676,6 +1676,13 @@
     <div class="zone-tag">แลกแต้มเป็นชั่วโมง กพช.</div>
     <h2 style="margin-bottom:14px;">กรอกข้อมูลแลกชั่วโมง กพช.</h2>
     <div class="field">
+      <label>ศูนย์การเรียนรู้</label>
+      <select id="kpchLearningCenter">
+        <option value="">-- เลือกศูนย์การเรียนรู้ --</option>
+        <option value="สกร.ระดับอำเภอเทิง">สกร.ระดับอำเภอเทิง</option>
+      </select>
+    </div>
+    <div class="field">
       <label>ชื่อ-สกุล</label>
       <input type="text" id="kpchName" placeholder="ชื่อ-นามสกุล">
     </div>
@@ -4452,7 +4459,6 @@ function buildRewardCard(r){
 =================================================================== */
 const KPCH_POINTS_PER_HOUR = 300;
 const KPCH_CENTERS = [
-  "สกร.ระดับอำเภอเทิง",
   "ศกร.ระดับตำบลตับเต่า (ครูประสิทธิ วิชัย)",
   "ศกร.ระดับตำบลหงาว (ครูเด่นนภา นิทะโน)",
   "ศกร.ระดับตำบลเวียง (ครูรัชฎาภรณ์ สุริยนต์)",
@@ -4477,35 +4483,46 @@ const KPCH_CENTERS = [
   "ศรช.ระดับตำบลเวียง (ครูชินดนัย คำต๊ะ)"
 ];
 
-/* รายชื่อศูนย์ที่แสดงใน dropdown: "สกร.ระดับอำเภอเทิง" เป็นอันดับแรกเสมอ ตามด้วยรายชื่อที่แอดมิน
-   จัดการไว้ที่ Firestore (siteSettings/kpchCenters) ถ้าอ่านไม่ได้จะใช้รายชื่อตั้งต้นในโค้ด */
-const CENTER_HEAD = "สกร.ระดับอำเภอเทิง";
-let centersCache = KPCH_CENTERS.slice();
-function fillCenterSelect(sel, list){
-  const keep = sel.value;
-  sel.innerHTML = '<option value="">-- เลือกศูนย์ / ครูประจำกลุ่ม --</option>';
-  list.forEach(name=>{
+function fillStaticCenterSelect(sel){
+  if(sel.options.length > 1) return; // เติมแค่ครั้งเดียวพอ
+  KPCH_CENTERS.forEach(name=>{
     const opt = document.createElement('option');
     opt.value = name; opt.textContent = name; sel.appendChild(opt);
   });
-  if(keep && list.includes(keep)) sel.value = keep;
 }
-async function refreshCenterSelects(){
-  const sels = ['kpchCenter', 'intentCenter'].map(id => document.getElementById(id)).filter(Boolean);
-  sels.forEach(sel => fillCenterSelect(sel, centersCache));   // แสดงของเดิมทันที ไม่ต้องรอ
+function populateKpchCenterOptions(){ fillStaticCenterSelect(document.getElementById('kpchCenter')); }
+
+/* ---- ศูนย์การเรียนรู้ (dropdown ใหม่) ----
+   "สกร.ระดับอำเภอเทิง" เป็นอันดับแรกเสมอ ที่เหลือแอดมินเพิ่มได้ที่ admin.html
+   เก็บที่ Firestore: siteSettings/learningCenters -> centers:[...] (อ่านไม่ได้ก็ใช้ค่าตั้งต้น) */
+const LEARNING_CENTER_HEAD = "สกร.ระดับอำเภอเทิง";
+let learningCentersCache = [LEARNING_CENTER_HEAD];
+function fillLearningCenterSelect(){
+  const sel = document.getElementById('kpchLearningCenter');
+  const keep = sel.value;
+  sel.innerHTML = '<option value="">-- เลือกศูนย์การเรียนรู้ --</option>';
+  learningCentersCache.forEach(name=>{
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name; sel.appendChild(opt);
+  });
+  if(keep && learningCentersCache.includes(keep)) sel.value = keep;
+}
+async function refreshLearningCenters(){
+  fillLearningCenterSelect();   // แสดงของเดิมทันที ไม่ต้องรอ
   try{
-    const snap = await withTimeout(db.collection('siteSettings').doc('kpchCenters').get(), 6000, 'centers');
+    const snap = await withTimeout(db.collection('siteSettings').doc('learningCenters').get(), 6000, 'learningCenters');
     const arr = snap.exists && Array.isArray(snap.data().centers) ? snap.data().centers.map(x => String(x).trim()).filter(Boolean) : null;
     if(arr && arr.length){
-      centersCache = [CENTER_HEAD].concat(arr.filter(x => x !== CENTER_HEAD));
-      sels.forEach(sel => fillCenterSelect(sel, centersCache));
+      learningCentersCache = [LEARNING_CENTER_HEAD].concat(arr.filter(x => x !== LEARNING_CENTER_HEAD));
+      fillLearningCenterSelect();
     }
-  }catch(err){ console.warn("refreshCenterSelects error:", err); }
+  }catch(err){ console.warn("refreshLearningCenters error:", err); }
 }
-function populateKpchCenterOptions(){ refreshCenterSelects(); }
 
 function openKpchForm(){
   populateKpchCenterOptions();
+  document.getElementById('kpchLearningCenter').value = "";
+  refreshLearningCenters();
   document.getElementById('kpchName').value = "";
   document.getElementById('kpchStudentId').value = "";
   document.getElementById('kpchCenter').value = "";
@@ -4552,7 +4569,7 @@ function addIntentItemRow(){
 }
 function openIntentForm(){
   const sel = document.getElementById('intentCenter');
-  refreshCenterSelects();
+  fillStaticCenterSelect(sel);
   document.getElementById('intentName').value = (typeof currentUserName === "string" ? currentUserName : "") || "";
   document.getElementById('intentLevel').value = "";
   sel.value = "";
@@ -4642,11 +4659,13 @@ let pendingKpchRequest = null;
 document.getElementById('kpchSubmitBtn').addEventListener('click', ()=>{
   const name = document.getElementById('kpchName').value.trim();
   const studentId = document.getElementById('kpchStudentId').value.trim();
+  const learningCenter = document.getElementById('kpchLearningCenter').value;
   const center = document.getElementById('kpchCenter').value;
   const hours = parseInt(document.getElementById('kpchHours').value, 10);
   const errorEl = document.getElementById('kpchError');
   errorEl.style.display = "none";
 
+  if(!learningCenter){ errorEl.textContent = "กรุณาเลือกศูนย์การเรียนรู้"; errorEl.style.display = "block"; return; }
   if(!name){ errorEl.textContent = "กรุณากรอกชื่อ-สกุล"; errorEl.style.display = "block"; return; }
   if(!studentId){ errorEl.textContent = "กรุณากรอกรหัสนักศึกษา"; errorEl.style.display = "block"; return; }
   if(!center){ errorEl.textContent = "กรุณาเลือกศูนย์ / ครูประจำกลุ่ม"; errorEl.style.display = "block"; return; }
@@ -4659,7 +4678,7 @@ document.getElementById('kpchSubmitBtn').addEventListener('click', ()=>{
     return;
   }
 
-  pendingKpchRequest = { name, studentId, center, hours, pointsNeeded };
+  pendingKpchRequest = { name, studentId, learningCenter, center, hours, pointsNeeded };
   openKpchConfirm();
 });
 
@@ -4669,6 +4688,7 @@ function openKpchConfirm(){
   document.getElementById('kpchConfirmSummary').innerHTML = `
     <div class="kpch-confirm-row"><span class="k">ชื่อ-สกุล</span><span class="v">${escapeHtmlKpch(d.name)}</span></div>
     <div class="kpch-confirm-row"><span class="k">รหัสนักศึกษา</span><span class="v">${escapeHtmlKpch(d.studentId)}</span></div>
+    <div class="kpch-confirm-row"><span class="k">ศูนย์การเรียนรู้</span><span class="v">${escapeHtmlKpch(d.learningCenter)}</span></div>
     <div class="kpch-confirm-row"><span class="k">ศูนย์ / ครูประจำกลุ่ม</span><span class="v">${escapeHtmlKpch(d.center)}</span></div>
     <div class="kpch-confirm-row"><span class="k">จำนวนชั่วโมงที่แลก</span><span class="v">${d.hours} ชั่วโมง</span></div>
     <div class="kpch-confirm-row highlight"><span class="k">แต้มที่ใช้ / แต้มคงเหลือหลังแลก</span><span class="v">-${d.pointsNeeded} แต้ม (เหลือ ${remaining} แต้ม)</span></div>
@@ -4691,7 +4711,7 @@ document.getElementById('kpchConfirmBackBtn').addEventListener('click', ()=>{
 
 document.getElementById('kpchConfirmSubmitBtn').addEventListener('click', async ()=>{
   if(!pendingKpchRequest) return;
-  const { name, studentId, center, hours, pointsNeeded } = pendingKpchRequest;
+  const { name, studentId, learningCenter, center, hours, pointsNeeded } = pendingKpchRequest;
   const errorEl = document.getElementById('kpchConfirmError');
   errorEl.style.display = "none";
 
@@ -4713,6 +4733,7 @@ document.getElementById('kpchConfirmSubmitBtn').addEventListener('click', async 
       tx.set(requestRef, {
         studentName: name,
         studentId: studentId,
+        learningCenter: learningCenter,
         center: center,
         hours: hours,
         pointsUsed: pointsNeeded,

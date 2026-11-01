@@ -1125,6 +1125,13 @@
     margin:16px 0 8px;
   }
   .passage-box .passage-h2:first-child{ margin-top:0; }
+  .passage-box .passage-table-wrap{ margin:4px 0 16px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .passage-box .passage-table{ width:100%; border-collapse:collapse; font-size:0.82em; line-height:1.45; }
+  .passage-box .passage-table th, .passage-box .passage-table td{
+    border:1px solid rgba(0,0,0,0.18); padding:5px 6px; text-align:left; vertical-align:top; overflow-wrap:break-word;
+  }
+  .passage-box .passage-table th{ background:#E9E3D2; font-weight:700; color:#1a1208; }
+  .passage-box .passage-table tbody tr:nth-child(even) td{ background:rgba(0,0,0,0.025); }
   .passage-box .passage-h3{
     font-family:'Sarabun', sans-serif;
     font-weight:700;
@@ -5790,6 +5797,19 @@ function parsePassageMarkupBlocks(text){
   const htmlParts = [];
   let paragraphBuffer = [];
 
+  /* ตาราง: บรรทัดที่ขึ้นต้นด้วย [th] (แถวหัวตาราง) หรือ [tr] (แถวข้อมูล) คั่นช่องด้วย | เช่น
+       [th]ระยะ|ยอดขาย|กำไร
+       [tr]แนะนำ|ต่ำ|ติดลบ
+     บรรทัดติดกันหลายบรรทัดถือเป็นตารางเดียวกัน */
+  let tableRows = [];
+  function flushTable(){
+    if(tableRows.length === 0) return;
+    const cell = (tag, t)=> `<${tag}>${processPassageInline(t.trim())}</${tag}>`;
+    const head = tableRows.filter(r=> r.head).map(r=> `<tr>${r.cells.map(c=> cell('th', c)).join('')}</tr>`).join('');
+    const body = tableRows.filter(r=> !r.head).map(r=> `<tr>${r.cells.map(c=> cell('td', c)).join('')}</tr>`).join('');
+    htmlParts.push(`<div class="passage-table-wrap"><table class="passage-table">${head ? '<thead>' + head + '</thead>' : ''}<tbody>${body}</tbody></table></div>`);
+    tableRows = [];
+  }
   function flushParagraph(){
     if(paragraphBuffer.length > 0){
       htmlParts.push(`<p>${paragraphBuffer.join('<br>')}</p>`);
@@ -5799,6 +5819,13 @@ function parsePassageMarkupBlocks(text){
 
   lines.forEach(rawLine=>{
     const line = rawLine.trim();
+    const tm = line.match(/^\[(th|tr)\](.*)$/);
+    if(tm){
+      flushParagraph();
+      tableRows.push({ head: tm[1] === 'th', cells: tm[2].split('|') });
+      return;
+    }
+    flushTable();
     if(line === ""){ flushParagraph(); return; }
     let m;
     if((m = line.match(/^\[h1\](.*)\[\/h1\]$/))){
@@ -5819,6 +5846,7 @@ function parsePassageMarkupBlocks(text){
     }
   });
   flushParagraph();
+  flushTable();
   return htmlParts;
 }
 function parsePassageMarkup(text){
@@ -5896,6 +5924,30 @@ function paginatePassageBlocks(blocks){
         }
       });
       if(paraBuffer) currentHtml += `<p>${paraBuffer}</p>`;
+      return;
+    }
+
+    /* ตาราง: ตัดแบ่งตาม "แถว" เติมหน้าให้เต็ม และใส่แถวหัวตารางซ้ำทุกหน้าที่ตารางต่อเนื่อง
+       ถ้าหน้าปัจจุบันใส่ได้ไม่ถึง 2 แถว ให้ขึ้นหน้าใหม่แทน (ไม่ทิ้งหัวตารางโดดเดี่ยว) */
+    const tblMatch = blockHtml.match(/^<div class="passage-table-wrap"><table class="passage-table">(<thead>[\s\S]*?<\/thead>)?<tbody>([\s\S]*)<\/tbody><\/table><\/div>$/);
+    if(tblMatch){
+      const head = tblMatch[1] || "";
+      const rows = tblMatch[2].match(/<tr>[\s\S]*?<\/tr>/g) || [];
+      const mk = (rs)=> `<div class="passage-table-wrap"><table class="passage-table">${head}<tbody>${rs.join('')}</tbody></table></div>`;
+      let acc = [];
+      const canStartHere = rows.length < 2 || fits(currentHtml + mk(rows.slice(0, 2)));
+      if(!canStartHere && currentHtml){ pages.push(currentHtml); currentHtml = ""; }
+      rows.forEach(r=>{
+        if(fits(currentHtml + mk(acc.concat([r])))){
+          acc.push(r);
+        } else {
+          if(acc.length){ currentHtml += mk(acc); }
+          if(currentHtml){ pages.push(currentHtml); }
+          currentHtml = "";
+          acc = [r];
+        }
+      });
+      if(acc.length) currentHtml += mk(acc);
       return;
     }
 

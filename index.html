@@ -4434,16 +4434,7 @@ function renderRewards(){
     });
     consumeSection.appendChild(row);
 
-    const scanCta = document.createElement('div');
-    scanCta.className = "rewards-scan-cta";
-    scanCta.innerHTML = `
-      <button class="btn" id="scanQrBtn" type="button">📷 สแกน QR Code เพื่อแลกรางวัล</button>
-      <p class="rewards-scan-hint">แจ้งเจ้าหน้าที่ว่าต้องการแลกรางวัลชิ้นใด เจ้าหน้าที่จะออก QR Code ให้ตามจำนวนแต้ม จากนั้นกดปุ่มนี้เพื่อสแกนและตัดแต้มอัตโนมัติ</p>
-    `;
-    consumeSection.appendChild(scanCta);
-
     root.appendChild(consumeSection);
-    document.getElementById('scanQrBtn').addEventListener('click', openQrScanModal);
   }
 
   /* ---------- ส่วนที่ 3: แลกแต้มเป็นสินค้าอุปโภค (กรอกที่อยู่เพื่อจัดส่ง) ---------- */

@@ -659,6 +659,15 @@
     background:#FFF1D6; border:1.5px solid #D98B1F; border-radius:10px;
     color:#8A4B00; font-size:15px; font-weight:800; line-height:1.5;
   }
+  .rewards-remark{
+    margin:0 0 14px; padding:10px 14px; background:#FBF7EC; border:1px solid #E2D8B8;
+    border-radius:10px; font-size:13.5px; line-height:1.6; color:#4a4332;
+  }
+  .rewards-remark ol{ margin:4px 0 0; padding-left:22px; }
+  .kpch-limit-full{
+    margin:10px 0; padding:10px 14px; background:#FDE8E8; border:1.5px solid #D32F2F;
+    border-radius:10px; color:#C62828; font-size:15px; font-weight:800; line-height:1.5;
+  }
   .rewards-intent-cta{ text-align:center; margin:18px 0 6px; }
   .rewards-intent-cta .btn{ width:auto; padding:13px 28px; }
   .intent-headline{
@@ -1649,13 +1658,13 @@
   </div>
 
   <div class="modal wide" id="modalIntentForm" style="display:none;">
-    <div class="intent-headline">แจ้งความประสงค์แลกรางวัล<br>เพื่อครูจะได้เตรียมรางวัลเพียงพอต่อการแลก</div>
+    <div class="intent-headline">กรอกข้อมูลเพื่อแลกรางวัล<br>ข้อมูลจะส่งถึงครูผู้ดูแลโดยตรง</div>
     <div class="field">
-      <label>ชื่อ-สกุล</label>
+      <label>ชื่อ-สกุลจริง</label>
       <input type="text" id="intentName" placeholder="ชื่อ-นามสกุล">
     </div>
     <div class="field">
-      <label>ระดับชั้น</label>
+      <label>ระดับชั้นที่กำลังศึกษา</label>
       <select id="intentLevel">
         <option value="">-- เลือกระดับชั้น --</option>
         <option value="ระดับประถมศึกษา">ระดับประถมศึกษา</option>
@@ -1664,9 +1673,9 @@
       </select>
     </div>
     <div class="field">
-      <label>ศูนย์ / ครูประจำกลุ่ม</label>
+      <label>ห้องเรียน</label>
       <select id="intentCenter">
-        <option value="">-- เลือกศูนย์ / ครูประจำกลุ่ม --</option>
+        <option value="">-- เลือกห้องเรียน --</option>
       </select>
     </div>
     <div class="field">
@@ -1674,9 +1683,20 @@
       <div id="intentItems"></div>
       <button class="btn secondary" id="intentAddItemBtn" type="button" style="width:auto; padding:9px 18px;">+ เพิ่มรางวัลอีกรายการ</button>
     </div>
+    <div class="kpch-points-preview" id="intentCostPreview"></div>
     <p class="login-error" id="intentError" style="display:none;"></p>
-    <button class="btn" id="intentSubmitBtn" type="button">ส่งข้อมูลแจ้งความประสงค์</button>
+    <button class="btn" id="intentSubmitBtn" type="button">ตรวจสอบข้อมูลก่อนยืนยัน</button>
     <button class="btn secondary" id="intentCancelBtn" type="button">ยกเลิก</button>
+  </div>
+
+  <div class="modal wide" id="modalIntentConfirm" style="display:none;">
+    <div class="zone-tag">ยืนยันแลกรางวัล</div>
+    <h2 style="margin-bottom:6px;">ตรวจสอบข้อมูลก่อนยืนยัน</h2>
+    <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 16px;">กรุณาตรวจสอบความถูกต้องของข้อมูลอีกครั้ง เมื่อกดยืนยันแล้วระบบจะตัดแต้มทันทีและไม่สามารถยกเลิกได้</p>
+    <div class="kpch-confirm-summary" id="intentConfirmSummary"></div>
+    <p class="login-error" id="intentConfirmError" style="display:none;"></p>
+    <button class="btn" id="intentConfirmSubmitBtn" type="button">ยืนยันการแลก</button>
+    <button class="btn secondary" id="intentConfirmBackBtn" type="button">← กลับไปแก้ไขข้อมูล</button>
   </div>
 
   <div class="modal wide" id="modalKpchForm" style="display:none;">
@@ -4371,11 +4391,14 @@ function renderRewards(){
   kpchSection.innerHTML = `
     <h3>🕐 แลกแต้มเป็นชั่วโมง กพช. <span class="rewards-section-note">(สำหรับ นศ. สกร.ระดับอำเภอเทิงเท่านั้น)</span></h3>
     <p class="rewards-kpch-rate">อัตราแลก: 300 แต้ม = 1 ชั่วโมง</p>
+    <div id="kpchLimitNotice" style="display:none;"></div>
     <button class="btn" id="openKpchFormBtn" type="button" style="width:auto; padding:13px 28px;">กรอกข้อมูลแลกชั่วโมง กพช.</button>
     <p class="rewards-kpch-desc">กรอกชื่อ-สกุล รหัสนักศึกษา ศูนย์/ครูประจำกลุ่ม และจำนวนชั่วโมงที่ต้องการแลก ระบบจะตัดแต้มให้ทันทีและแจ้งไปยังเจ้าหน้าที่เพื่อดำเนินการบันทึกชั่วโมงให้ต่อไป</p>
   `;
   root.appendChild(kpchSection);
   document.getElementById('openKpchFormBtn').addEventListener('click', openKpchForm);
+  updateKpchLimitUi();
+  refreshKpchLimit();
 
   /* ---------- ส่วนที่ 2: แลกแต้มเป็นสินค้าบริโภค (แลกด้วยการสแกน QR ที่ศูนย์) ---------- */
   const consumables = rewards.filter(r=> (r.rewardType || "consumable") !== "durable")
@@ -4387,18 +4410,29 @@ function renderRewards(){
 
     const dayNotice = document.createElement('div');
     dayNotice.className = "rewards-day-notice";
-    dayNotice.textContent = "✅ สามารถแลกรางวัลได้วันที่ 16 ของทุก ๆ เดือน แต่หากตรงกับวันหยุดให้มาแลกวันทำการถัดไป";
+    dayNotice.textContent = "👆 คลิกรางวัลที่ต้องการแลก เพื่อกรอกข้อมูล";
     consumeSection.appendChild(dayNotice);
+
+    const remark = document.createElement('div');
+    remark.className = "rewards-remark";
+    remark.innerHTML = `<b>หมายเหตุ :</b>
+      <ol>
+        <li>ไม่จำกัดจำนวนครั้งในการแลกต่อเดือน</li>
+        <li>ผู้อ่านที่แลกรางวัลก่อนวันที่ 25 ของเดือน ครู ศกร.ตำบล จะนำรับรางวัลไปมอบให้ในสัปดาห์แรกของเดือนหน้า</li>
+        <li>ผู้อ่านที่แลกรางวัลหลังวันที่ 25 ของเดือน ครู ศกร.ตำบล จะนำรับรางวัลไปมอบให้ในสัปดาห์แรกของเดือนถัดจากเดือนหน้า</li>
+        <li>สกร.ระดับอำเภอเทิง ส่งมอบรางวัลให้ผู้อ่านที่แลกรางวัล 1 ครั้ง/เดือน เท่านั้น</li>
+      </ol>`;
+    consumeSection.appendChild(remark);
 
     const row = document.createElement('div');
     row.className = "rewards-row";
-    consumables.forEach(r=> row.appendChild(buildRewardCard(r)));
+    consumables.forEach(r=>{
+      const card = buildRewardCard(r);
+      card.classList.add('reward-card-clickable');
+      card.addEventListener('click', ()=> openIntentForm(r));
+      row.appendChild(card);
+    });
     consumeSection.appendChild(row);
-
-    const intentCta = document.createElement('div');
-    intentCta.className = "rewards-intent-cta";
-    intentCta.innerHTML = `<button class="btn" id="openIntentBtn" type="button">📝 แจ้งความประสงค์ขอแลกรางวัล</button>`;
-    consumeSection.appendChild(intentCta);
 
     const scanCta = document.createElement('div');
     scanCta.className = "rewards-scan-cta";
@@ -4410,7 +4444,6 @@ function renderRewards(){
 
     root.appendChild(consumeSection);
     document.getElementById('scanQrBtn').addEventListener('click', openQrScanModal);
-    document.getElementById('openIntentBtn').addEventListener('click', openIntentForm);
   }
 
   /* ---------- ส่วนที่ 3: แลกแต้มเป็นสินค้าอุปโภค (กรอกที่อยู่เพื่อจัดส่ง) ---------- */
@@ -4465,6 +4498,34 @@ function buildRewardCard(r){
    หน้า admin.html (ดูส่วน "คำขอแลกชั่วโมง กพช.")
 =================================================================== */
 const KPCH_POINTS_PER_HOUR = 300;
+const KPCH_MAX_HOURS = 50;           // สิทธิ์สูงสุดต่อผู้อ่าน 1 คน
+const KPCH_FULL_MSG = "สิทธิ์การแลกเป็น ชั่วโมง กพช. ครบแล้ว โปรดนำแต้มไปแลกเป็นรางวัลอย่างอื่นแทน";
+let kpchHoursUsed = 0;
+/* รวมชั่วโมง กพช. ที่เคยแลกแล้วจากประวัติการแลก (users/{uid}/redemptions) */
+async function refreshKpchLimit(){
+  try{
+    if(!currentUserDocRef) return;
+    const snap = await withTimeout(currentUserDocRef.collection('redemptions').get(), 8000, 'kpchHours');
+    let sum = 0;
+    snap.forEach(d=>{
+      const m = String((d.data() || {}).rewardTitle || "").match(/แลกชั่วโมง กพช\.\s*(\d+)\s*ชั่วโมง/);
+      if(m) sum += parseInt(m[1], 10) || 0;
+    });
+    kpchHoursUsed = sum;
+  }catch(e){ console.warn("refreshKpchLimit error:", e); }
+  updateKpchLimitUi();
+}
+function updateKpchLimitUi(){
+  const full = kpchHoursUsed >= KPCH_MAX_HOURS;
+  const n = document.getElementById('kpchLimitNotice');
+  if(n){
+    n.style.display = "block";
+    if(full){ n.className = "kpch-limit-full"; n.textContent = KPCH_FULL_MSG; }
+    else { n.className = "rewards-section-note"; n.textContent = `สิทธิ์สูงสุดคนละ ${KPCH_MAX_HOURS} ชั่วโมง (แลกแล้ว ${kpchHoursUsed} ชั่วโมง เหลือ ${KPCH_MAX_HOURS - kpchHoursUsed} ชั่วโมง)`; }
+  }
+  const b = document.getElementById('openKpchFormBtn');
+  if(b){ b.disabled = full; b.style.opacity = full ? ".5" : ""; b.style.cursor = full ? "not-allowed" : ""; }
+}
 const KPCH_CENTERS = [
   "ศกร.ระดับตำบลตับเต่า (ครูประสิทธิ วิชัย)",
   "ศกร.ระดับตำบลหงาว (ครูเด่นนภา นิทะโน)",
@@ -4490,9 +4551,18 @@ const KPCH_CENTERS = [
   "ศรช.ระดับตำบลเวียง (ครูชินดนัย คำต๊ะ)"
 ];
 
-function fillStaticCenterSelect(sel){
+const CLASSROOMS = [
+  "ศกร.ตำบลสันทรายงาม (ครูวินัส)","ศกร.ตำบลหงาว (ครูเด่นนภา)","ศรช.ตำบลเวียง (ครูอดิเรก)",
+  "ศกร.ตำบลปล้อง (ครูศุภชัย)","ศกร.ตำบลตับเต่า (ครูประสิทธิ์)","ศกร.ตำบลเวียง (ครูรัชฎาภรณ์)",
+  "ศรช.ตำบลงิ้ว (ครูทับทิม)","ศกร.ตำบลงิ้ว (ครูกัญญ์วรา)","ศกร.ตำบลเชียงเคี่ยน (ครูธันยพัต)",
+  "ศกร.ตำบลแม่ลอย (ครูดวงกมล)","ศรช.ตำบลเวียง (ครูปราณี)","ศกร.ตำบลศรีดอนไชย (ครูชนิสา)",
+  "ศกร.ตำบลหนองแรด (ครูวัชราพรรณ)","ศศช.บ้านขุนต้า (ครูสรนันท์)","ศศช.บ้านเล่าตาขาว (ครูนรินทร์ลักษณ์)",
+  "ศศช.บ้านราษฎร์ภักดี (ครูสายสุนีย์)","ศศช.บ้านราษฎร์รักษา (ครูวิมล)","ศศช.บ้านขุนห้วยไคร้ (ครูสุณิศา)",
+  "ศรช.ตำบลปล้อง (ครูชินดนัย)","ศรช.ตำบลหงาว (ครูธวัชชัย)","ศศช.บ้านไทยสามัคคี (ครูอนุพงษ์)"
+];
+function fillStaticCenterSelect(sel, list){
   if(sel.options.length > 1) return; // เติมแค่ครั้งเดียวพอ
-  KPCH_CENTERS.forEach(name=>{
+  (list || KPCH_CENTERS).forEach(name=>{
     const opt = document.createElement('option');
     opt.value = name; opt.textContent = name; sel.appendChild(opt);
   });
@@ -4527,6 +4597,7 @@ async function refreshLearningCenters(){
 }
 
 function openKpchForm(){
+  if(kpchHoursUsed >= KPCH_MAX_HOURS){ showToast(KPCH_FULL_MSG); return; }
   populateKpchCenterOptions();
   document.getElementById('kpchLearningCenter').value = "";
   refreshLearningCenters();
@@ -4574,17 +4645,44 @@ function addIntentItemRow(){
   });
   wrap.appendChild(row);
 }
-function openIntentForm(){
+function rewardCostNum(key){
+  const r = rewards.find(x=> x.key === key);
+  return r && typeof r.cost === "number" ? r.cost : 0;
+}
+function intentTotalCost(){
+  let sum = 0;
+  document.querySelectorAll('#intentItems .intent-item').forEach(row=>{
+    const key = row.querySelector('.intent-reward').value;
+    const qty = Math.max(1, Math.min(99, parseInt(row.querySelector('.intent-count').value, 10) || 1));
+    if(key) sum += rewardCostNum(key) * qty;
+  });
+  return sum;
+}
+function updateIntentCost(){
+  const el = document.getElementById('intentCostPreview');
+  const t = intentTotalCost();
+  const ok = t <= totalPoints;
+  el.textContent = t > 0 ? `ใช้ ${t.toLocaleString('th-TH')} แต้ม (คุณมี ${totalPoints.toLocaleString('th-TH')} แต้ม)${ok ? "" : " - แต้มไม่พอ"}` : "เลือกรางวัลเพื่อดูแต้มที่ต้องใช้";
+  el.className = "kpch-points-preview" + (ok ? "" : " insufficient");
+}
+['input','change','click'].forEach(ev=> document.getElementById('intentItems').addEventListener(ev, ()=> setTimeout(updateIntentCost, 0)));
+document.getElementById('intentAddItemBtn').addEventListener('click', ()=> setTimeout(updateIntentCost, 0));
+function openIntentForm(reward){
   const sel = document.getElementById('intentCenter');
-  fillStaticCenterSelect(sel);
+  fillStaticCenterSelect(sel, CLASSROOMS);
   document.getElementById('intentName').value = (typeof currentUserName === "string" ? currentUserName : "") || "";
   document.getElementById('intentLevel').value = "";
   sel.value = "";
   document.getElementById('intentItems').innerHTML = "";
   addIntentItemRow();
+  if(reward && reward.key){
+    const first = document.querySelector('#intentItems .intent-reward');
+    if(first) first.value = reward.key;
+  }
+  updateIntentCost();
   document.getElementById('intentError').style.display = "none";
   document.getElementById('intentSubmitBtn').disabled = false;
-  document.getElementById('intentSubmitBtn').textContent = "ส่งข้อมูลแจ้งความประสงค์";
+  document.getElementById('intentSubmitBtn').textContent = "ตรวจสอบข้อมูลก่อนยืนยัน";
   hideAllModals();
   document.getElementById('modalIntentForm').style.display = "block";
   document.getElementById('overlay').classList.add('show');
@@ -4600,9 +4698,9 @@ async function submitIntentForm(){
   const name = document.getElementById('intentName').value.trim();
   const level = document.getElementById('intentLevel').value;
   const center = document.getElementById('intentCenter').value;
-  if(!name) return fail("กรุณากรอกชื่อ-สกุล");
-  if(!level) return fail("กรุณาเลือกระดับชั้น");
-  if(!center) return fail("กรุณาเลือกศูนย์ / ครูประจำกลุ่ม");
+  if(!name) return fail("กรุณากรอกชื่อ-สกุลจริง");
+  if(!level) return fail("กรุณาเลือกระดับชั้นที่กำลังศึกษา");
+  if(!center) return fail("กรุณาเลือกห้องเรียน");
   const merged = new Map();
   for(const row of document.querySelectorAll('#intentItems .intent-item')){
     const key = row.querySelector('.intent-reward').value;
@@ -4613,25 +4711,81 @@ async function submitIntentForm(){
     merged.set(key, { rewardKey: key, title: r ? r.title : key, qty: (prev ? prev.qty : 0) + qty });
   }
   if(merged.size === 0) return fail("กรุณาเลือกรางวัลอย่างน้อย 1 รายการ");
+  const items = [...merged.values()].map(it=> ({ ...it, cost: rewardCostNum(it.rewardKey) }));
+  const total = items.reduce((a, it)=> a + it.cost * it.qty, 0);
+  if(total > totalPoints) return fail(`แต้มไม่พอ ต้องใช้ ${total} แต้ม แต่คุณมี ${totalPoints} แต้ม`);
   err.style.display = "none";
-  const btn = document.getElementById('intentSubmitBtn');
-  btn.disabled = true; btn.textContent = "กำลังส่ง...";
+  pendingIntent = { name, level, center, items, total };
+  openIntentConfirm();
+}
+
+let pendingIntent = null;
+function openIntentConfirm(){
+  const d = pendingIntent;
+  document.getElementById('intentConfirmSummary').innerHTML = `
+    <div class="kpch-confirm-row"><span class="k">ชื่อ-สกุล</span><span class="v">${escapeHtmlKpch(d.name)}</span></div>
+    <div class="kpch-confirm-row"><span class="k">ระดับชั้น</span><span class="v">${escapeHtmlKpch(d.level)}</span></div>
+    <div class="kpch-confirm-row"><span class="k">ห้องเรียน</span><span class="v">${escapeHtmlKpch(d.center)}</span></div>
+    <div class="kpch-confirm-row"><span class="k">รางวัลที่แลก</span><span class="v">${d.items.map(it=> escapeHtmlKpch(it.title) + " x" + it.qty).join("<br>")}</span></div>
+    <div class="kpch-confirm-row highlight"><span class="k">แต้มที่ใช้ / แต้มคงเหลือหลังแลก</span><span class="v">-${d.total} แต้ม (เหลือ ${totalPoints - d.total} แต้ม)</span></div>`;
+  document.getElementById('intentConfirmError').style.display = "none";
+  hideAllModals();
+  document.getElementById('modalIntentConfirm').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
+}
+document.getElementById('intentConfirmBackBtn').addEventListener('click', ()=>{
+  hideAllModals();
+  document.getElementById('modalIntentForm').style.display = "block";
+  document.getElementById('overlay').classList.add('show');
+});
+async function confirmIntentSubmit(){
+  if(!pendingIntent) return;
+  const { name, level, center, items, total } = pendingIntent;
+  const err = document.getElementById('intentConfirmError');
+  const fail = m => { err.textContent = m; err.style.display = "block"; };
+  err.style.display = "none";
+  const btn = document.getElementById('intentConfirmSubmitBtn');
+  btn.disabled = true; btn.textContent = "กำลังส่งข้อมูล...";
   try{
-    await withTimeout(db.collection('rewardIntents').add({
-      uid: currentUserDocRef ? currentUserDocRef.id : "",
-      name, level, center,
-      items: [...merged.values()],
-      status: "pending",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    }), 15000, 'intent');
-    closeIntentForm();
-    showToast("ส่งข้อมูลแจ้งความประสงค์เรียบร้อยแล้ว ครูจะเตรียมรางวัลไว้ให้");
+    const result = await db.runTransaction(async (tx)=>{
+      const userSnap = await tx.get(currentUserDocRef);
+      const current = (userSnap.data() || {}).totalPoints || 0;
+      if(total > current) return { ok:false, message:`แต้มไม่พอ ต้องใช้ ${total} แต้ม แต่คุณเหลือ ${current} แต้ม` };
+      const updated = current - total;
+      tx.update(currentUserDocRef, { totalPoints: updated });
+      tx.set(db.collection('rewardIntents').doc(), {
+        uid: currentUserDocRef.id,
+        name, level, center,
+        items, pointsUsed: total,
+        status: "pending",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      tx.set(currentUserDocRef.collection('redemptions').doc(), {
+        rewardTitle: items.map(it=> `${it.title} x${it.qty}`).join(", ") + " (รับที่ศูนย์/ครู ศกร.)",
+        cost: total,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        totalPointsAfter: updated
+      });
+      return { ok:true, totalPoints: updated };
+    });
+    if(!result.ok){ fail(result.message); }
+    else{
+      totalPoints = result.totalPoints;
+      document.getElementById('pointsText').textContent = totalPoints;
+      pendingIntent = null;
+      hideAllModals();
+      document.getElementById('overlay').classList.remove('show');
+      recordRedeemerPublic();
+      showToast(`แลกรางวัลสำเร็จ (-${total} แต้ม) ครูจะนำรางวัลไปมอบให้ตามกำหนด`);
+      renderRewards();
+    }
   }catch(e){
-    console.warn("submitIntentForm error:", e);
-    btn.disabled = false; btn.textContent = "ส่งข้อมูลแจ้งความประสงค์";
+    console.warn("confirmIntentSubmit error:", e);
     fail("ส่งข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง (หากยังไม่ได้ ให้แจ้งครูผู้ดูแล)");
   }
+  btn.disabled = false; btn.textContent = "ยืนยันการแลก";
 }
+document.getElementById('intentConfirmSubmitBtn').addEventListener('click', confirmIntentSubmit);
 document.getElementById('intentAddItemBtn').addEventListener('click', addIntentItemRow);
 document.getElementById('intentSubmitBtn').addEventListener('click', submitIntentForm);
 document.getElementById('intentCancelBtn').addEventListener('click', closeIntentForm);
@@ -4677,6 +4831,11 @@ document.getElementById('kpchSubmitBtn').addEventListener('click', ()=>{
   if(!studentId){ errorEl.textContent = "กรุณากรอกรหัสนักศึกษา"; errorEl.style.display = "block"; return; }
   if(!center){ errorEl.textContent = "กรุณาเลือกศูนย์ / ครูประจำกลุ่ม"; errorEl.style.display = "block"; return; }
   if(!hours || hours <= 0){ errorEl.textContent = "กรุณากรอกจำนวนชั่วโมงที่ต้องการแลก"; errorEl.style.display = "block"; return; }
+  if(kpchHoursUsed >= KPCH_MAX_HOURS){ errorEl.textContent = KPCH_FULL_MSG; errorEl.style.display = "block"; errorEl.style.color = "#C62828"; return; }
+  if(kpchHoursUsed + hours > KPCH_MAX_HOURS){
+    errorEl.textContent = `แลกได้อีกไม่เกิน ${KPCH_MAX_HOURS - kpchHoursUsed} ชั่วโมง (สิทธิ์สูงสุดคนละ ${KPCH_MAX_HOURS} ชั่วโมง)`;
+    errorEl.style.display = "block"; return;
+  }
 
   const pointsNeeded = hours * KPCH_POINTS_PER_HOUR;
   if(pointsNeeded > totalPoints){
@@ -4771,6 +4930,7 @@ document.getElementById('kpchConfirmSubmitBtn').addEventListener('click', async 
       document.getElementById('overlay').classList.remove('show');
       pendingKpchRequest = null;
       recordRedeemerPublic(`ชั่วโมง กพช. ${hours} ชั่วโมง`);
+      kpchHoursUsed += hours;
       showToast(`ส่งคำขอแลก ${hours} ชั่วโมงสำเร็จ (-${pointsNeeded} แต้ม) เจ้าหน้าที่จะดำเนินการบันทึกชั่วโมงให้ต่อไป`);
       renderRewards();
     }
